@@ -338,6 +338,7 @@ export default function App() {
             onBack={() => setCurrentView('juegos')}
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
+            currentUser={currentUser || 'Sapo'}
           />
         )}
 

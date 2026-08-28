@@ -84,17 +84,17 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
   );
 
   const {
-    phase,
-    sapoShips,
-    miReyShips,
-    sapoBoard,
-    miReyBoard,
-    currentTurn,
-    logs,
-    sapoReady,
-    miReyReady,
-    winner,
-  } = gameState;
+    phase = 'setup',
+    sapoShips = [],
+    miReyShips = [],
+    sapoBoard = {},
+    miReyBoard = {},
+    currentTurn = 'Sapo',
+    logs = [],
+    sapoReady = false,
+    miReyReady = false,
+    winner = null,
+  } = gameState || defaultState;
 
   // Local Ship Placement State (to allow placing ships locally before confirming)
   const [localShips, setLocalShips] = useState<PlacedShip[]>([]);

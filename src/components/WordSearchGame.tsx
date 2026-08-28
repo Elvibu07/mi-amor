@@ -1,17 +1,32 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { playCutePop, playWinSound, playHeartSound } from '../utils/audio';
+import { useSyncedDoc } from '../lib/useFirestore';
 
 interface WordSearchGameProps {
   onBack: () => void;
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
+  currentUser: 'Sapo' | 'Mi Rey';
 }
 
 interface WordLocation {
   word: string;
   coords: { row: number; col: number }[];
   hint: string;
+}
+
+interface FoundWordInfo {
+  word: string;
+  foundBy: 'Sapo' | 'Mi Rey';
+}
+
+interface WordSearchSyncState {
+  grid: string[][];
+  words: WordLocation[];
+  foundWords: FoundWordInfo[];
+  gameActive: boolean;
+  winner: 'Sapo' | 'Mi Rey' | 'Empate' | null;
 }
 
 const ROMANTIC_WORDS = [
@@ -103,31 +118,57 @@ function generateWordSearch(wordList: string[]): { grid: string[][]; words: Word
   return { grid, words: placedWords };
 }
 
+const initialGameData = generateWordSearch(ROMANTIC_WORDS);
+const defaultState: WordSearchSyncState = {
+  grid: initialGameData.grid,
+  words: initialGameData.words,
+  foundWords: [],
+  gameActive: true,
+  winner: null,
+};
+
 export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   onBack,
   sapoProfile,
   miReyProfile,
+  currentUser,
 }) => {
-  const [gameState, setGameState] = useState(() => generateWordSearch(ROMANTIC_WORDS));
-  const [foundWords, setFoundWords] = useState<string[]>([]);
+  const [gameState, setGameState] = useSyncedDoc<WordSearchSyncState>(
+    'shared',
+    'wordsearch_state',
+    'ourlobby_wordsearch',
+    defaultState
+  );
+
+  const { grid, words, foundWords, gameActive, winner } = gameState || defaultState;
   const [selectedCells, setSelectedCells] = useState<{ row: number; col: number }[]>([]);
   const [activeHint, setActiveHint] = useState<string | null>(null);
 
-  const { grid, words } = gameState;
+  const sapoScore = foundWords.filter(w => w.foundBy === 'Sapo').length;
+  const miReyScore = foundWords.filter(w => w.foundBy === 'Mi Rey').length;
 
   const isCellSelected = (r: number, c: number) => {
     return selectedCells.some((cell) => cell.row === r && cell.col === c);
   };
 
-  const isCellFound = (r: number, c: number) => {
-    return words.some((w) =>
-      foundWords.includes(w.word) &&
-      w.coords.some((coord) => coord.row === r && coord.col === c)
-    );
+  // Find who found a given cell
+  const getCellFoundBy = (r: number, c: number): 'Sapo' | 'Mi Rey' | null => {
+    for (const w of words) {
+      const foundInfo = foundWords.find(f => f.word === w.word);
+      if (foundInfo && w.coords.some(coord => coord.row === r && coord.col === c)) {
+        return foundInfo.foundBy;
+      }
+    }
+    return null;
   };
 
   const handleCellClick = (r: number, c: number) => {
+    if (!gameActive) return;
     playCutePop();
+
+    // Don't allow selecting cells that are already part of a found word
+    if (getCellFoundBy(r, c) !== null) return;
+
     const alreadySelected = selectedCells.some((cell) => cell.row === r && cell.col === c);
     let newSelected: { row: number; col: number }[];
 
@@ -139,9 +180,10 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
 
     setSelectedCells(newSelected);
 
-    // Check if the selected cells form any of the words
+    // Check if selected cells match any unfound words
     for (const w of words) {
-      if (!foundWords.includes(w.word)) {
+      const isAlreadyFound = foundWords.some(f => f.word === w.word);
+      if (!isAlreadyFound) {
         const matchesWord =
           w.coords.length === newSelected.length &&
           w.coords.every((coord) =>
@@ -149,13 +191,38 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
           );
 
         if (matchesWord) {
-          const updated = [...foundWords, w.word];
-          setFoundWords(updated);
-          setSelectedCells([]);
           playWinSound();
-          if (updated.length === words.length) {
+          const updatedFoundWords = [...foundWords, { word: w.word, foundBy: currentUser }];
+          const isFinished = updatedFoundWords.length === words.length;
+
+          let gameWinner = null;
+          let active = true;
+
+          if (isFinished) {
             playHeartSound();
+            active = false;
+            // Calculate who found more words
+            const finalSapoScore = updatedFoundWords.filter(f => f.foundBy === 'Sapo').length;
+            const finalMiReyScore = updatedFoundWords.filter(f => f.foundBy === 'Mi Rey').length;
+            
+            if (finalSapoScore > finalMiReyScore) {
+              gameWinner = 'Sapo' as const;
+            } else if (finalMiReyScore > finalSapoScore) {
+              gameWinner = 'Mi Rey' as const;
+            } else {
+              gameWinner = 'Empate' as const;
+            }
           }
+
+          setGameState({
+            grid,
+            words,
+            foundWords: updatedFoundWords,
+            gameActive: active,
+            winner: gameWinner,
+          });
+
+          setSelectedCells([]);
           return;
         }
       }
@@ -163,18 +230,24 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   };
 
   const handleShowHint = () => {
-    const unfound = words.find((w) => !foundWords.includes(w.word));
+    const unfound = words.find((w) => !foundWords.some(f => f.word === w.word));
     if (unfound) {
-      setActiveHint(`Pista para "${unfound.word}": ${unfound.hint}`);
+      setActiveHint(`Pista para una palabra: ${unfound.hint}`);
       playCutePop();
     } else {
-      setActiveHint('¡Ya encontraste todas las palabras!');
+      setActiveHint('¡Ya encontraron todas las palabras!');
     }
   };
 
   const handleReset = () => {
-    setGameState(generateWordSearch(ROMANTIC_WORDS));
-    setFoundWords([]);
+    const nextGame = generateWordSearch(ROMANTIC_WORDS);
+    setGameState({
+      grid: nextGame.grid,
+      words: nextGame.words,
+      foundWords: [],
+      gameActive: true,
+      winner: null,
+    });
     setSelectedCells([]);
     setActiveHint(null);
     playCutePop();
@@ -198,48 +271,69 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div className="flex flex-col gap-1 text-white">
             <h1 className="font-display-lg text-3xl sm:text-4xl">
-              Sopa de Letras <span className="text-[#ff5470]">🔠</span>
+              Sopa de Letras Competitiva 🔠🏆
             </h1>
             <p className="font-body-md text-xs sm:text-sm text-[#e2bec0] max-w-lg">
-              Busca palabras secretas románticas en nuestra cuadrícula. ¡Cada partida es diferente! 💖
+              ¡Carrera de velocidad! Encuentra las palabras antes que tu pareja. Las celdas se colorean según quién las encuentre primero.
             </p>
           </div>
 
-          {/* Progress Box */}
-          <div className="bg-[#2f2348] p-4 rounded-2xl w-full md:w-auto min-w-[280px] shadow-xl border border-[#5a4042]/30 flex flex-col gap-2">
-            <div className="flex justify-between items-center w-full">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  <img
-                    alt="Sapo"
-                    src={sapoProfile.avatar}
-                    className="w-8 h-8 rounded-full border border-[#7adaa1] object-cover"
-                  />
-                  <img
-                    alt="Mi Rey"
-                    src={miReyProfile.avatar}
-                    className="w-8 h-8 rounded-full border border-[#fabc41] object-cover"
-                  />
+          {/* Combined Progress Box */}
+          <div className="bg-[#2f2348] p-4 rounded-2xl w-full md:w-auto min-w-[340px] shadow-xl border border-[#5a4042]/30 flex flex-col gap-3">
+            <div className="flex justify-between items-center text-white">
+              {/* Sapo Score */}
+              <div className="flex items-center gap-2.5">
+                <img
+                  alt="Sapo"
+                  src={sapoProfile.avatar}
+                  className="w-10 h-10 rounded-full border-2 border-[#7adaa1] object-cover"
+                />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-[#7adaa1] uppercase font-bold tracking-wider">{sapoProfile.name}</span>
+                  <span className="text-xl font-bold">{sapoScore} <span className="text-xs text-[#e2bec0]/60">encontradas</span></span>
                 </div>
               </div>
-              <div className="flex flex-col items-end text-white">
-                <span className="font-label-caps text-[10px] text-[#ffb2b8] uppercase tracking-wider">
-                  Palabras Encontradas
-                </span>
-                <span className="font-headline-lg text-2xl">
-                  {foundWords.length}
-                  <span className="text-[#e2bec0]/50 text-base">/{words.length}</span>
-                </span>
+
+              <div className="text-[#e2bec0]/40 font-bold text-sm px-2">VS</div>
+
+              {/* Mi Rey Score */}
+              <div className="flex items-center gap-2.5 text-right">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-[#fabc41] uppercase font-bold tracking-wider">{miReyProfile.name}</span>
+                  <span className="text-xl font-bold">{miReyScore} <span className="text-xs text-[#e2bec0]/60">encontradas</span></span>
+                </div>
+                <img
+                  alt="Mi Rey"
+                  src={miReyProfile.avatar}
+                  className="w-10 h-10 rounded-full border-2 border-[#fabc41] object-cover"
+                />
               </div>
             </div>
+
+            {/* General progress bar */}
             <div className="w-full h-2 bg-[#13062b] rounded-full overflow-hidden relative">
               <div
                 className="absolute left-0 top-0 h-full bg-[#7adaa1] transition-all duration-500"
                 style={{ width: `${words.length > 0 ? (foundWords.length / words.length) * 100 : 0}%` }}
               ></div>
             </div>
+            <div className="text-[9px] text-[#e2bec0]/60 text-center font-label-mono uppercase">
+              Progreso total: {foundWords.length} / {words.length} palabras
+            </div>
           </div>
         </div>
+
+        {/* Winner Announcement Banner */}
+        {!gameActive && winner && (
+          <div className="bg-[#7adaa1]/20 border-2 border-[#7adaa1] rounded-[2rem] p-6 text-center shadow-[0_0_30px_rgba(122,218,161,0.2)] animate-bounce">
+            <h2 className="text-3xl sm:text-4xl font-display-lg text-[#7adaa1] font-bold mb-1">
+              {winner === 'Empate' ? '🤝 ¡Empate de velocidad! 🤝' : `🏆 ¡Ganador: ${winner === 'Sapo' ? sapoProfile.name : miReyProfile.name}! 🏆`}
+            </h2>
+            <p className="text-white text-sm font-label-mono uppercase tracking-wider">
+              {winner === 'Empate' ? '¡Ambos encontraron la misma cantidad de palabras!' : '¡Fue más veloz encontrando las palabras de amor! 💖'}
+            </p>
+          </div>
+        )}
 
         {activeHint && (
           <div className="bg-[#fabc41]/15 border border-[#fabc41]/40 text-[#fabc41] px-4 py-2.5 rounded-xl text-sm font-label-mono animate-pop flex items-center justify-between">
@@ -255,7 +349,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
             <div className="grid grid-cols-10 gap-1 sm:gap-2 bg-[#3a2e54]/50 p-2 sm:p-4 rounded-2xl select-none max-w-[500px] w-full">
               {grid.map((row, r) =>
                 row.map((letter, c) => {
-                  const isFound = isCellFound(r, c);
+                  const cellOwner = getCellFoundBy(r, c);
                   const isSelected = isCellSelected(r, c);
 
                   return (
@@ -263,11 +357,15 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                       key={`${r}-${c}`}
                       onClick={() => handleCellClick(r, c)}
                       className={`aspect-square flex items-center justify-center font-headline-md text-sm sm:text-base md:text-lg rounded-lg sm:rounded-xl cursor-pointer transition-all ${
-                        isFound
-                          ? 'bg-[#7adaa1]/25 text-[#7adaa1] ring-1 ring-[#7adaa1]/60 shadow-[0_0_12px_rgba(122,218,161,0.4)] font-bold'
+                        cellOwner === 'Sapo'
+                          ? 'bg-[#7adaa1]/30 text-[#7adaa1] ring-2 ring-[#7adaa1] font-bold shadow-[0_0_12px_rgba(122,218,161,0.3)]'
+                          : cellOwner === 'Mi Rey'
+                          ? 'bg-[#fabc41]/30 text-[#fabc41] ring-2 ring-[#fabc41] font-bold shadow-[0_0_12px_rgba(250,188,65,0.3)]'
                           : isSelected
                           ? 'bg-[#ff5470] text-white font-bold scale-105 shadow-md'
-                          : 'bg-[#2f2348]/70 hover:bg-[#3f3359] text-white'
+                          : gameActive
+                          ? 'bg-[#2f2348]/70 hover:bg-[#3f3359] text-white'
+                          : 'bg-[#2f2348]/30 text-white/40 cursor-not-allowed'
                       }`}
                     >
                       {letter}
@@ -276,8 +374,8 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                 })
               )}
             </div>
-            <p className="text-[11px] text-[#e2bec0] font-label-mono mt-4 text-center">
-              Haz clic en las letras para seleccionarlas y formar las palabras ocultas.
+            <p className="text-[11px] text-[#e2bec0] font-label-mono mt-4 text-center text-white">
+              Sostén y haz clic en las celdas para marcar una palabra. ¡Apúrate antes que tu pareja!
             </p>
           </div>
 
@@ -289,7 +387,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                 className="flex-1 bg-[#ff5470] text-white font-headline-md text-sm py-3 px-4 rounded-xl shadow-lg active:translate-y-0.5 transition-all flex items-center justify-center gap-1.5 font-bold"
               >
                 <span className="material-symbols-outlined text-base">refresh</span>
-                Nuevo Juego
+                Nuevo Tablero
               </button>
               <button
                 onClick={handleShowHint}
@@ -300,18 +398,24 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
               </button>
             </div>
 
-            <div className="flex-1 bg-[#2f2348] rounded-2xl p-5 shadow-xl border border-[#5a4042]/20 flex flex-col">
+            <div className="flex-1 bg-[#2f2348] rounded-2xl p-5 shadow-xl border border-[#5a4042]/20 flex flex-col text-white">
               <h3 className="font-label-mono text-xs text-[#fabc41] mb-4 uppercase tracking-widest border-b border-[#5a4042]/30 pb-2 font-bold">
                 Palabras a encontrar ({words.length})
               </h3>
               <ul className="flex flex-col gap-2.5">
                 {words.map((w) => {
-                  const isFound = foundWords.includes(w.word);
+                  const foundInfo = foundWords.find(f => f.word === w.word);
+                  const isFound = !!foundInfo;
+
                   return (
                     <li
                       key={w.word}
                       className={`flex items-center justify-between p-2 rounded-xl transition-all ${
-                        isFound ? 'bg-[#7adaa1]/10' : 'hover:bg-[#3a2e54]/50'
+                        isFound 
+                          ? foundInfo.foundBy === 'Sapo' 
+                            ? 'bg-[#7adaa1]/10 border border-[#7adaa1]/20'
+                            : 'bg-[#fabc41]/10 border border-[#fabc41]/20'
+                          : 'hover:bg-[#3a2e54]/50'
                       }`}
                     >
                       <span
@@ -324,11 +428,13 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                         {w.word}
                       </span>
                       {isFound ? (
-                        <div className="w-6 h-6 rounded-full bg-[#7adaa1]/20 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-[#7adaa1] text-[16px]">
-                            check
-                          </span>
-                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          foundInfo.foundBy === 'Sapo' 
+                            ? 'bg-[#7adaa1]/20 text-[#7adaa1]'
+                            : 'bg-[#fabc41]/20 text-[#fabc41]'
+                        }`}>
+                          {foundInfo.foundBy === 'Sapo' ? sapoProfile.name : miReyProfile.name}
+                        </span>
                       ) : (
                         <span className="font-label-mono text-[10px] text-[#e2bec0]/70">
                           {w.word.length} LTRS
@@ -338,12 +444,6 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                   );
                 })}
               </ul>
-
-              {words.length > 0 && foundWords.length === words.length && (
-                <div className="mt-4 p-3 bg-[#7adaa1]/20 border border-[#7adaa1] rounded-xl text-center text-[#7adaa1] text-xs font-bold font-label-mono">
-                  🎉 ¡Felicidades! Completaron la sopa de letras de amor.
-                </div>
-              )}
             </div>
           </div>
         </div>
