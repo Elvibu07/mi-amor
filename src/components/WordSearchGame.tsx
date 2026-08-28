@@ -140,7 +140,13 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
     defaultState
   );
 
-  const { grid, words, foundWords, gameActive, winner } = gameState || defaultState;
+  const {
+    grid = defaultState.grid,
+    words = defaultState.words,
+    foundWords = [],
+    gameActive = true,
+    winner = null,
+  } = gameState || defaultState;
   const [selectedCells, setSelectedCells] = useState<{ row: number; col: number }[]>([]);
   const [activeHint, setActiveHint] = useState<string | null>(null);
 
