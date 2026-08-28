@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { MemoryItem, UserProfile } from '../types';
 import { playCutePop } from '../utils/audio';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../lib/firebase';
 
 interface MemoryVaultViewProps {
   memories: MemoryItem[];
@@ -25,6 +27,40 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
   const [newImageUrl, setNewImageUrl] = useState('');
   const [newCapturedBy, setNewCapturedBy] = useState<'Sapo' | 'Mi Rey' | 'Together'>('Sapo');
 
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+
+    if (storage) {
+      try {
+        const fileRef = ref(storage, `memories/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        setNewImageUrl(url);
+      } catch (err: any) {
+        console.error(err);
+        setUploadError(
+          'Error al subir a Firebase. Es probable que necesites activar las reglas públicas de Storage.'
+        );
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewImageUrl(reader.result as string);
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuote.trim()) return;
@@ -43,6 +79,7 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
     playCutePop();
     setNewQuote('');
     setNewImageUrl('');
+    setUploadError(null);
     setIsAddModalOpen(false);
   };
 
@@ -260,15 +297,66 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
 
               <div>
                 <label className="block text-xs font-label-mono text-[#e2bec0] uppercase tracking-wider mb-1.5">
-                  URL de la Imagen (o foto de pareja)
+                  Foto del Recuerdo
                 </label>
-                <input
-                  type="url"
-                  value={newImageUrl}
-                  onChange={(e) => setNewImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full bg-[#201439] border border-[#5a4042]/40 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5470]"
-                />
+                <div className="flex flex-col gap-2 bg-[#201439] border border-[#5a4042]/40 rounded-xl p-3.5">
+                  {/* File Selector */}
+                  <div className="flex items-center gap-3">
+                    <label className="flex-1 bg-[#ff5470] hover:bg-[#ff6b84] text-white text-xs font-bold py-2.5 px-4 rounded-xl text-center cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md">
+                      <span className="material-symbols-outlined text-sm">cloud_upload</span>
+                      {uploading ? 'Subiendo...' : 'Seleccionar Foto'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        disabled={uploading}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-[10px] text-[#e2bec0]/60">O pega una URL abajo</span>
+                  </div>
+
+                  {/* Upload status / error */}
+                  {uploadError && (
+                    <div className="text-[10px] text-[#ff5470] font-label-mono leading-relaxed bg-[#ff5470]/10 p-2.5 rounded-lg border border-[#ff5470]/30 mt-1">
+                      ⚠️ {uploadError}
+                      <div className="mt-1 text-white/80">
+                        Pega las siguientes reglas en la pestaña <b>Rules</b> de Firebase Storage en tu consola de Google:
+                        <pre className="bg-black/50 p-2.5 rounded-lg mt-1 text-[9px] font-mono whitespace-pre-wrap select-all text-left">
+{`rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}`}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    type="url"
+                    value={newImageUrl}
+                    onChange={(e) => setNewImageUrl(e.target.value)}
+                    placeholder="Pega la URL de la imagen aquí..."
+                    className="w-full bg-black/30 border border-[#5a4042]/30 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#ff5470] mt-2"
+                  />
+
+                  {newImageUrl && (
+                    <div className="mt-2 relative rounded-lg overflow-hidden aspect-video bg-black/40 border border-[#ff5470]/20">
+                      <img src={newImageUrl} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setNewImageUrl('')}
+                        className="absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
