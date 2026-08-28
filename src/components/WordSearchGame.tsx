@@ -22,7 +22,7 @@ interface FoundWordInfo {
 }
 
 interface WordSearchSyncState {
-  grid: string[][];
+  grid: string[]; // Flat 100-element array to avoid Firestore's nested array limitation
   words: WordLocation[];
   foundWords: FoundWordInfo[];
   gameActive: boolean;
@@ -36,9 +36,9 @@ const ROMANTIC_WORDS = [
   'LOCO', 'FLOR', 'SOL', 'LUNA', 'ANHELO', 'ILUSION', 'ETERNO', 'PASION'
 ];
 
-function generateWordSearch(wordList: string[]): { grid: string[][]; words: WordLocation[] } {
+function generateWordSearch(wordList: string[]): { grid: string[]; words: WordLocation[] } {
   const size = 10;
-  const grid: string[][] = Array(size).fill(null).map(() => Array(size).fill(''));
+  const grid2D: string[][] = Array(size).fill(null).map(() => Array(size).fill(''));
   
   // Pick 6 random unique words
   const shuffled = [...wordList].sort(() => 0.5 - Math.random());
@@ -60,7 +60,7 @@ function generateWordSearch(wordList: string[]): { grid: string[][]; words: Word
         // Check overlaps
         let canPlace = true;
         for (let i = 0; i < word.length; i++) {
-          if (grid[row][col + i] !== '' && grid[row][col + i] !== word[i]) {
+          if (grid2D[row][col + i] !== '' && grid2D[row][col + i] !== word[i]) {
             canPlace = false;
             break;
           }
@@ -68,7 +68,7 @@ function generateWordSearch(wordList: string[]): { grid: string[][]; words: Word
         if (canPlace) {
           const coords = [];
           for (let i = 0; i < word.length; i++) {
-            grid[row][col + i] = word[i];
+            grid2D[row][col + i] = word[i];
             coords.push({ row, col: col + i });
           }
           placedWords.push({
@@ -83,7 +83,7 @@ function generateWordSearch(wordList: string[]): { grid: string[][]; words: Word
         // Check overlaps
         let canPlace = true;
         for (let i = 0; i < word.length; i++) {
-          if (grid[row + i][col] !== '' && grid[row + i][col] !== word[i]) {
+          if (grid2D[row + i][col] !== '' && grid2D[row + i][col] !== word[i]) {
             canPlace = false;
             break;
           }
@@ -91,7 +91,7 @@ function generateWordSearch(wordList: string[]): { grid: string[][]; words: Word
         if (canPlace) {
           const coords = [];
           for (let i = 0; i < word.length; i++) {
-            grid[row + i][col] = word[i];
+            grid2D[row + i][col] = word[i];
             coords.push({ row: row + i, col });
           }
           placedWords.push({
@@ -109,13 +109,13 @@ function generateWordSearch(wordList: string[]): { grid: string[][]; words: Word
   const alphabet = 'ABCDEFGHIJKLMNÑOPQRSTUVXYZ';
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
-      if (grid[r][c] === '') {
-        grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+      if (grid2D[r][c] === '') {
+        grid2D[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
       }
     }
   }
 
-  return { grid, words: placedWords };
+  return { grid: grid2D.flat(), words: placedWords };
 }
 
 const initialGameData = generateWordSearch(ROMANTIC_WORDS);
@@ -140,13 +140,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
     defaultState
   );
 
-  const {
-    grid = defaultState.grid,
-    words = defaultState.words,
-    foundWords = [],
-    gameActive = true,
-    winner = null,
-  } = gameState || defaultState;
+  const { grid = defaultState.grid, words = defaultState.words, foundWords = [], gameActive = true, winner = null } = gameState || defaultState;
   const [selectedCells, setSelectedCells] = useState<{ row: number; col: number }[]>([]);
   const [activeHint, setActiveHint] = useState<string | null>(null);
 
@@ -353,32 +347,32 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
           {/* 10x10 Word Grid */}
           <div className="flex-1 flex flex-col items-center bg-[#25193d] p-4 sm:p-6 rounded-3xl shadow-xl border border-[#5a4042]/30">
             <div className="grid grid-cols-10 gap-1 sm:gap-2 bg-[#3a2e54]/50 p-2 sm:p-4 rounded-2xl select-none max-w-[500px] w-full">
-              {grid.map((row, r) =>
-                row.map((letter, c) => {
-                  const cellOwner = getCellFoundBy(r, c);
-                  const isSelected = isCellSelected(r, c);
+              {grid.map((letter, index) => {
+                const r = Math.floor(index / 10);
+                const c = index % 10;
+                const cellOwner = getCellFoundBy(r, c);
+                const isSelected = isCellSelected(r, c);
 
-                  return (
-                    <button
-                      key={`${r}-${c}`}
-                      onClick={() => handleCellClick(r, c)}
-                      className={`aspect-square flex items-center justify-center font-headline-md text-sm sm:text-base md:text-lg rounded-lg sm:rounded-xl cursor-pointer transition-all ${
-                        cellOwner === 'Sapo'
-                          ? 'bg-[#7adaa1]/30 text-[#7adaa1] ring-2 ring-[#7adaa1] font-bold shadow-[0_0_12px_rgba(122,218,161,0.3)]'
-                          : cellOwner === 'Mi Rey'
-                          ? 'bg-[#fabc41]/30 text-[#fabc41] ring-2 ring-[#fabc41] font-bold shadow-[0_0_12px_rgba(250,188,65,0.3)]'
-                          : isSelected
-                          ? 'bg-[#ff5470] text-white font-bold scale-105 shadow-md'
-                          : gameActive
-                          ? 'bg-[#2f2348]/70 hover:bg-[#3f3359] text-white'
-                          : 'bg-[#2f2348]/30 text-white/40 cursor-not-allowed'
-                      }`}
-                    >
-                      {letter}
-                    </button>
-                  );
-                })
-              )}
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleCellClick(r, c)}
+                    className={`aspect-square flex items-center justify-center font-headline-md text-sm sm:text-base md:text-lg rounded-lg sm:rounded-xl cursor-pointer transition-all ${
+                      cellOwner === 'Sapo'
+                        ? 'bg-[#7adaa1]/30 text-[#7adaa1] ring-2 ring-[#7adaa1] font-bold shadow-[0_0_12px_rgba(122,218,161,0.3)]'
+                        : cellOwner === 'Mi Rey'
+                        ? 'bg-[#fabc41]/30 text-[#fabc41] ring-2 ring-[#fabc41] font-bold shadow-[0_0_12px_rgba(250,188,65,0.3)]'
+                        : isSelected
+                        ? 'bg-[#ff5470] text-white font-bold scale-105 shadow-md'
+                        : gameActive
+                        ? 'bg-[#2f2348]/70 hover:bg-[#3f3359] text-white'
+                        : 'bg-[#2f2348]/30 text-white/40 cursor-not-allowed'
+                    }`}
+                  >
+                    {letter}
+                  </button>
+                );
+              })}
             </div>
             <p className="text-[11px] text-[#e2bec0] font-label-mono mt-4 text-center text-white">
               Sostén y haz clic en las celdas para marcar una palabra. ¡Apúrate antes que tu pareja!
