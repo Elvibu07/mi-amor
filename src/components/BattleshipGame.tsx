@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { playBattleshipHit, playBattleshipMiss, playCutePop, playWinSound } from '../utils/audio';
 import { useSyncedDoc } from '../lib/useFirestore';
+import confetti from 'canvas-confetti';
 
 interface BattleshipGameProps {
   onBack: () => void;
@@ -247,6 +248,11 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
 
     if (isGameOver) {
       playWinSound();
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
       setGameState(prev => ({
         ...prev,
         sapoShips: currentUser === 'Sapo' ? sapoShips : updatedShips,
@@ -366,19 +372,40 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
 
             {/* Controls */}
             <div className="md:col-span-5 flex flex-col gap-6">
-              <div className="bg-[#2f2348]/70 backdrop-blur-xl border border-[#5a4042]/30 rounded-3xl p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-white font-headline-md">Tus Barcos</h3>
-                  <button 
-                    onClick={() => { setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal'); playCutePop(); }}
-                    className="flex items-center gap-2 bg-[#221934] px-3 py-1.5 rounded-lg border border-[#5a4042]/50 text-[#e2bec0] hover:text-white transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">{orientation === 'horizontal' ? 'swap_horiz' : 'swap_vert'}</span>
-                    <span className="font-label-caps text-[10px] uppercase font-bold">{orientation === 'horizontal' ? 'Horiz' : 'Vert'}</span>
-                  </button>
+              <div className="bg-[#2f2348]/70 backdrop-blur-xl border border-[#5a4042]/30 rounded-3xl p-6 flex flex-col gap-5">
+                {/* Large Segmented Orientation Selector */}
+                <div className="flex flex-col gap-2">
+                  <span className="font-label-caps text-[10px] text-[#e2bec0] uppercase tracking-wider font-bold">Orientación de Colocación</span>
+                  <div className="flex gap-2 w-full">
+                    <button
+                      onClick={() => { setOrientation('horizontal'); playCutePop(); }}
+                      className={`flex-1 py-2.5 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                        orientation === 'horizontal'
+                          ? 'bg-[#ff5470] border-[#ff5470] text-white shadow-md shadow-[#ff5470]/20'
+                          : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0] hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-sm">swap_horiz</span>
+                      Horizontal
+                    </button>
+                    <button
+                      onClick={() => { setOrientation('vertical'); playCutePop(); }}
+                      className={`flex-1 py-2.5 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                        orientation === 'vertical'
+                          ? 'bg-[#ff5470] border-[#ff5470] text-white shadow-md shadow-[#ff5470]/20'
+                          : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0] hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-sm">swap_vert</span>
+                      Vertical
+                    </button>
+                  </div>
                 </div>
-                
+
+                <div className="w-full h-px bg-[#5a4042]/30"></div>
+
                 <div className="flex flex-col gap-3">
+                  <h3 className="text-white font-headline-md">Tus Barcos</h3>
                   {SHIPS.map((ship, idx) => {
                     const placed = localShips.find(s => s.id === ship.id);
                     const isSelected = activeShipIdx === idx;
