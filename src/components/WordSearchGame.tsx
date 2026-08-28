@@ -8,6 +8,7 @@ interface WordSearchGameProps {
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
   currentUser: 'Sapo' | 'Mi Rey';
+  onUpdateScore: (winner: 'Sapo' | 'Mi Rey') => void;
 }
 
 interface WordLocation {
@@ -132,6 +133,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   sapoProfile,
   miReyProfile,
   currentUser,
+  onUpdateScore,
 }) => {
   const [gameState, setGameState] = useSyncedDoc<WordSearchSyncState>(
     'shared',
@@ -211,6 +213,10 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
               gameWinner = 'Mi Rey' as const;
             } else {
               gameWinner = 'Empate' as const;
+            }
+
+            if (gameWinner && gameWinner !== 'Empate') {
+              onUpdateScore(gameWinner);
             }
           }
 
