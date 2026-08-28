@@ -174,7 +174,7 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
                     />
                   )}
                   <span className="text-[10px] text-[#3a2e54] font-label-mono uppercase font-bold tracking-wider">
-                    {mem.capturedBy === 'Together' ? 'Captured Together' : `Captured by ${mem.capturedBy}`}
+                    {mem.capturedBy === 'Together' ? 'Captured Together' : `Captured by ${mem.capturedBy === 'Sapo' ? sapoProfile.name : miReyProfile.name}`}
                   </span>
                 </div>
               </div>
@@ -232,7 +232,11 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
                 Fotografía para nuestro santuario privado
               </span>
               <span className="text-xs font-bold font-label-mono bg-rose-100 text-rose-800 px-3 py-1 rounded-full">
-                {selectedMemory.capturedBy}
+                {selectedMemory.capturedBy === 'Together'
+                  ? 'Ambos'
+                  : selectedMemory.capturedBy === 'Sapo'
+                  ? sapoProfile.name
+                  : miReyProfile.name}
               </span>
             </div>
           </div>
@@ -373,7 +377,7 @@ service firebase.storage {
                         : 'border-[#5a4042]/40 text-[#e2bec0]'
                     }`}
                   >
-                    Sapo 🐸
+                    {sapoProfile.name} 🐸
                   </button>
                   <button
                     type="button"
@@ -384,7 +388,7 @@ service firebase.storage {
                         : 'border-[#5a4042]/40 text-[#e2bec0]'
                     }`}
                   >
-                    Mi Rey 👑
+                    {miReyProfile.name} 👑
                   </button>
                   <button
                     type="button"
