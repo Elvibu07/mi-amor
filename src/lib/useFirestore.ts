@@ -9,6 +9,21 @@ import { db, isFirebaseConfigured, onSnapshot, doc, setDoc, collection, addDoc, 
 
 type SetValue<T> = (value: T | ((prev: T) => T)) => void;
 
+// Helper to recursively remove undefined properties before writing to Firestore
+function removeUndefined(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefined(item));
+  }
+  if (obj && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([_, v]) => v !== undefined)
+        .map(([k, v]) => [k, removeUndefined(v)])
+    );
+  }
+  return obj;
+}
+
 /**
  * Syncs a single Firestore document field with localStorage fallback.
  * @param firestorePath - e.g. 'shared/state' with field 'music'
@@ -81,7 +96,8 @@ export function useSyncedDoc<T>(
       // Save to Firestore if configured
       if (isFirebaseConfigured && db) {
         const docRef = doc(db, collection_, docId);
-        setDoc(docRef, resolved as object, { merge: true }).catch(console.warn);
+        const cleaned = removeUndefined(resolved);
+        setDoc(docRef, cleaned as object, { merge: true }).catch(console.warn);
       }
 
       return resolved;
