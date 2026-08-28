@@ -381,7 +381,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
         {/* Footer quote */}
         <div className="mt-12 mb-4 text-center">
           <p className="font-label-mono text-[10px] text-[#e2bec0]/40 uppercase tracking-widest">
-            Your private sanctuary since 2022
+            
           </p>
         </div>
       </div>
