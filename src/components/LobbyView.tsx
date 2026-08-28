@@ -79,6 +79,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             <span className="font-['IBM_Plex_Mono',monospace] text-4xl sm:text-6xl md:text-7xl text-[#eaddff] font-bold leading-none tracking-tight">
               {gyeTime}
             </span>
+            {sapoProfile.statusPhrase && (
+              <div className="flex items-center gap-1.5 text-[11px] text-[#e2bec0] italic mt-2 bg-[#201439]/60 border border-[#7adaa1]/25 px-2.5 py-1 rounded-xl w-fit max-w-[180px] sm:max-w-[280px] shadow-sm">
+                <span className="material-symbols-outlined text-[12px] text-[#7adaa1]">chat_bubble</span>
+                <span className="truncate" title={sapoProfile.statusPhrase}>"{sapoProfile.statusPhrase}"</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -108,6 +114,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             <span className="font-['IBM_Plex_Mono',monospace] text-4xl sm:text-6xl md:text-7xl text-[#eaddff] font-bold leading-none tracking-tight">
               {madTime}
             </span>
+            {miReyProfile.statusPhrase && (
+              <div className="flex items-center gap-1.5 text-[11px] text-[#e2bec0] italic mt-2 bg-[#201439]/60 border border-[#fabc41]/25 px-2.5 py-1 rounded-xl w-fit max-w-[180px] sm:max-w-[280px] shadow-sm justify-end">
+                <span className="material-symbols-outlined text-[12px] text-[#fabc41]">chat_bubble</span>
+                <span className="truncate" title={miReyProfile.statusPhrase}>"{miReyProfile.statusPhrase}"</span>
+              </div>
+            )}
           </div>
           <img 
             alt="Mi Rey Avatar" 
