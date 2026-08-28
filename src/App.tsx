@@ -339,6 +339,7 @@ export default function App() {
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
             currentUser={currentUser || 'Sapo'}
+            onUpdateScore={handleUpdateScore}
           />
         )}
 
