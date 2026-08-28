@@ -184,7 +184,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ sapoProfile, miReyProfile,
         </div>
 
         <p className="mt-8 text-[10px] text-[#e2bec0]/30 font-label-mono uppercase tracking-widest text-center">
-          Privado • Solo para los dos • Since 2024
+          Privado • Solo para los dos • Since 2026
         </p>
       </div>
 
