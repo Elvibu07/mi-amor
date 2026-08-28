@@ -505,7 +505,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                       <div className="flex items-center gap-1.5">
                         <span className="text-[#e2bec0]/70">De:</span>
                         <img alt={coupon.from} src={fromAvatar} className="w-5 h-5 rounded-full object-cover border border-white/20" />
-                        <span className="font-bold text-white">{coupon.from}</span>
+                        <span className="font-bold text-white">{coupon.from === 'Sapo' ? sapoProfile.name : miReyProfile.name}</span>
                       </div>
 
                       <span className="material-symbols-outlined text-xs text-[#e2bec0]/50">arrow_forward</span>
@@ -513,7 +513,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                       <div className="flex items-center gap-1.5">
                         <span className="text-[#e2bec0]/70">Para:</span>
                         <img alt={coupon.to} src={toAvatar} className="w-5 h-5 rounded-full object-cover border border-white/20" />
-                        <span className="font-bold text-[#fabc41]">{coupon.to}</span>
+                        <span className="font-bold text-[#fabc41]">{coupon.to === 'Sapo' ? sapoProfile.name : miReyProfile.name}</span>
                       </div>
                     </div>
 
@@ -804,8 +804,8 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                     onChange={(e) => setNewCouponTo(e.target.value as any)}
                     className="w-full bg-[#201439] text-white rounded-xl p-2.5 border border-[#5a4042]/30 text-xs font-bold"
                   >
-                    <option value="Mi Rey">👑 Mi Rey</option>
-                    <option value="Sapo">🐸 Sapo</option>
+                    <option value="Mi Rey">👑 {miReyProfile.name}</option>
+                    <option value="Sapo">🐸 {sapoProfile.name}</option>
                   </select>
                 </div>
               </div>
