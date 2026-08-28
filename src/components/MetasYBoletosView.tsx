@@ -596,7 +596,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
         {/* Footer info note */}
         <div className="mt-12 mb-4 text-center">
           <p className="font-label-mono text-[10px] text-[#e2bec0]/40 uppercase tracking-widest">
-            Sapo & Mi Rey • Compromiso y sueños compartidos 🐸👑
+           
           </p>
         </div>
       </div>
