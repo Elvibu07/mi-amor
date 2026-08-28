@@ -91,7 +91,7 @@ export default function App() {
   });
 
   // ── Game Score ─────────────────────────────────────────────────────────────
-  const [gameScore, setGameScore] = useSyncedDoc<GameScore>('shared', 'game_score', 'ourlobby_gamescore', { victoriasGYE: 42, victoriasMAD: 38 });
+  const [gameScore, setGameScore] = useSyncedDoc<GameScore>('shared', 'game_score', 'ourlobby_gamescore', { victoriasGYE: 0, victoriasMAD: 0 });
 
   // ── Dual Clocks ────────────────────────────────────────────────────────────
   const [gyeTime, setGyeTime] = useState('--:--');
@@ -329,6 +329,7 @@ export default function App() {
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
             onUpdateScore={handleUpdateScore}
+            currentUser={currentUser || 'Sapo'}
           />
         )}
 
@@ -346,6 +347,7 @@ export default function App() {
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
             onUpdateScore={handleUpdateScore}
+            currentUser={currentUser || 'Sapo'}
           />
         )}
 

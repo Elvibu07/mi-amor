@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { playBattleshipHit, playBattleshipMiss, playCutePop, playWinSound } from '../utils/audio';
+import { useSyncedDoc } from '../lib/useFirestore';
 
 interface BattleshipGameProps {
   onBack: () => void;
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
   onUpdateScore: (winner: 'Sapo' | 'Mi Rey') => void;
+  currentUser: 'Sapo' | 'Mi Rey';
 }
 
-type GamePhase = 'setup_sapo' | 'setup_mirey' | 'pass_phone' | 'playing' | 'game_over';
 type Orientation = 'horizontal' | 'vertical';
-type Player = 'Sapo' | 'Mi Rey';
 
 interface ShipDef {
   id: string;
@@ -36,149 +36,187 @@ interface PlacedShip {
 
 interface LogEntry {
   id: string;
-  attacker: Player;
+  attacker: 'Sapo' | 'Mi Rey';
   coord: string;
   result: 'hit' | 'miss' | 'sunk';
   shipName?: string;
   timeStr: string;
 }
 
+interface BattleshipSyncState {
+  phase: 'setup' | 'playing' | 'game_over';
+  sapoShips: PlacedShip[];
+  miReyShips: PlacedShip[];
+  sapoBoard: Record<number, 'hit' | 'miss'>; // Sapo's board (attacked by Mi Rey)
+  miReyBoard: Record<number, 'hit' | 'miss'>; // Mi Rey's board (attacked by Sapo)
+  currentTurn: 'Sapo' | 'Mi Rey';
+  logs: LogEntry[];
+  sapoReady: boolean;
+  miReyReady: boolean;
+  winner: 'Sapo' | 'Mi Rey' | null;
+}
+
+const defaultState: BattleshipSyncState = {
+  phase: 'setup',
+  sapoShips: [],
+  miReyShips: [],
+  sapoBoard: {},
+  miReyBoard: {},
+  currentTurn: 'Sapo',
+  logs: [],
+  sapoReady: false,
+  miReyReady: false,
+  winner: null,
+};
+
 export const BattleshipGame: React.FC<BattleshipGameProps> = ({
   onBack,
   sapoProfile,
   miReyProfile,
   onUpdateScore,
+  currentUser,
 }) => {
-  // ── GAME STATE ────────────────────────────────────────────────────────────
-  const [phase, setPhase] = useState<GamePhase>('setup_sapo');
-  const [passTo, setPassTo] = useState<Player>('Mi Rey'); // used for pass_phone screen
+  const [gameState, setGameState] = useSyncedDoc<BattleshipSyncState>(
+    'shared',
+    'battleship_state',
+    'ourlobby_battleship',
+    defaultState
+  );
 
-  // Ship Placement State
-  const [sapoShips, setSapoShips] = useState<PlacedShip[]>([]);
-  const [miReyShips, setMiReyShips] = useState<PlacedShip[]>([]);
-  
+  const {
+    phase,
+    sapoShips,
+    miReyShips,
+    sapoBoard,
+    miReyBoard,
+    currentTurn,
+    logs,
+    sapoReady,
+    miReyReady,
+    winner,
+  } = gameState;
+
+  // Local Ship Placement State (to allow placing ships locally before confirming)
+  const [localShips, setLocalShips] = useState<PlacedShip[]>([]);
   const [activeShipIdx, setActiveShipIdx] = useState<number>(0);
   const [orientation, setOrientation] = useState<Orientation>('horizontal');
 
-  // Battle State
-  const [currentTurn, setCurrentTurn] = useState<Player>('Sapo');
-  const [sapoBoard, setSapoBoard] = useState<Record<number, 'hit' | 'miss'>>({});
-  const [miReyBoard, setMiReyBoard] = useState<Record<number, 'hit' | 'miss'>>({});
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  // Reset local state if we enter setup phase
+  useEffect(() => {
+    if (phase === 'setup') {
+      const isPlayerReady = currentUser === 'Sapo' ? sapoReady : miReyReady;
+      if (!isPlayerReady) {
+        setLocalShips([]);
+        setActiveShipIdx(0);
+      }
+    }
+  }, [phase, sapoReady, miReyReady, currentUser]);
 
-  // ── HELPERS ───────────────────────────────────────────────────────────────
+  // Sync phase change to playing when both players are ready
+  useEffect(() => {
+    if (phase === 'setup' && sapoReady && miReyReady) {
+      setGameState(prev => ({
+        ...prev,
+        phase: 'playing',
+        currentTurn: 'Sapo', // Sapo (Elvia) goes first
+      }));
+    }
+  }, [phase, sapoReady, miReyReady]);
+
+  // Coordinate naming helper (e.g. A1, J10)
   const getCoordName = (index: number) => {
     const row = String.fromCharCode(65 + Math.floor(index / 10)); // A-J
     const col = (index % 10) + 1; // 1-10
     return `${row}${col}`;
   };
 
-  const getActiveProfile = () => {
-    if (phase === 'setup_sapo') return sapoProfile;
-    if (phase === 'setup_mirey') return miReyProfile;
-    if (phase === 'playing' || phase === 'game_over') return currentTurn === 'Sapo' ? sapoProfile : miReyProfile;
-    return sapoProfile; // fallback
-  };
-
-  // ── SETUP PHASE LOGIC ─────────────────────────────────────────────────────
-  const currentSetupShips = phase === 'setup_sapo' ? sapoShips : miReyShips;
-  const setSetupShips = phase === 'setup_sapo' ? setSapoShips : setMiReyShips;
+  const isShipPlaced = (shipId: string) => localShips.some(s => s.id === shipId);
   
-  const isShipPlaced = (shipId: string) => currentSetupShips.some(s => s.id === shipId);
-  const getNextUnplacedShipIdx = () => {
+  const getNextUnplacedShipIdx = (currentPlaced: PlacedShip[]) => {
     for (let i = 0; i < SHIPS.length; i++) {
-      if (!currentSetupShips.some(s => s.id === SHIPS[i].id)) return i;
+      if (!currentPlaced.some(s => s.id === SHIPS[i].id)) return i;
     }
     return -1;
   };
 
-  const canPlaceShip = (startIdx: number, size: number, ori: Orientation) => {
+  const canPlaceShip = (startIdx: number, size: number, ori: Orientation, currentPlaced: PlacedShip[]) => {
     const cells: number[] = [];
     const row = Math.floor(startIdx / 10);
     const col = startIdx % 10;
 
     for (let i = 0; i < size; i++) {
       if (ori === 'horizontal') {
-        if (col + i > 9) return null; // out of bounds
+        if (col + i > 9) return null;
         cells.push(startIdx + i);
       } else {
-        if (row + i > 9) return null; // out of bounds
+        if (row + i > 9) return null;
         cells.push(startIdx + (i * 10));
       }
     }
 
     // Check overlaps
     for (const cell of cells) {
-      if (currentSetupShips.some(s => s.cells.includes(cell))) return null;
+      if (currentPlaced.some(s => s.cells.includes(cell))) return null;
     }
 
     return cells;
   };
 
   const handleSetupCellClick = (index: number) => {
-    if (activeShipIdx === -1) return; // All placed
+    if (activeShipIdx === -1) return;
     const shipDef = SHIPS[activeShipIdx];
     if (isShipPlaced(shipDef.id)) return;
 
-    const cells = canPlaceShip(index, shipDef.size, orientation);
-    if (!cells) {
-      // Invalid placement
-      return;
-    }
+    const cells = canPlaceShip(index, shipDef.size, orientation, localShips);
+    if (!cells) return;
 
     playCutePop();
-    setSetupShips(prev => [...prev, { id: shipDef.id, name: shipDef.name, cells, hits: [] }]);
+    const updated = [...localShips, { id: shipDef.id, name: shipDef.name, cells, hits: [] }];
+    setLocalShips(updated);
     
-    // Auto-select next
+    // Select next unplaced ship
     setTimeout(() => {
-      setActiveShipIdx(getNextUnplacedShipIdx());
+      setActiveShipIdx(getNextUnplacedShipIdx(updated));
     }, 0);
   };
 
   const handleRemoveShip = (shipId: string) => {
     playCutePop();
-    setSetupShips(prev => prev.filter(s => s.id !== shipId));
+    const updated = localShips.filter(s => s.id !== shipId);
+    setLocalShips(updated);
     setActiveShipIdx(SHIPS.findIndex(s => s.id === shipId));
   };
 
   const handleConfirmFleet = () => {
     playCutePop();
-    if (phase === 'setup_sapo') {
-      setPassTo('Mi Rey');
-      setPhase('pass_phone');
-    } else if (phase === 'setup_mirey') {
-      setPassTo('Sapo'); // Sapo goes first
-      setPhase('pass_phone');
-    }
-  };
-
-  const handlePassPhoneReady = () => {
-    playCutePop();
-    if (passTo === 'Mi Rey' && phase === 'pass_phone' && miReyShips.length === 0) {
-      setPhase('setup_mirey');
-      setActiveShipIdx(0);
+    if (currentUser === 'Sapo') {
+      setGameState(prev => ({
+        ...prev,
+        sapoShips: localShips,
+        sapoReady: true,
+      }));
     } else {
-      setPhase('playing');
-      setCurrentTurn(passTo);
+      setGameState(prev => ({
+        ...prev,
+        miReyShips: localShips,
+        miReyReady: true,
+      }));
     }
   };
 
-  // ── PLAYING PHASE LOGIC ───────────────────────────────────────────────────
-  const activeOpponentBoard = currentTurn === 'Sapo' ? miReyBoard : sapoBoard;
-  const setOpponentBoard = currentTurn === 'Sapo' ? setMiReyBoard : setSapoBoard;
-  const opponentShips = currentTurn === 'Sapo' ? miReyShips : sapoShips;
-  const setOpponentShips = currentTurn === 'Sapo' ? setMiReyShips : setSapoShips;
-  
-  const getSapoHealth = () => sapoShips.length > 0 ? (sapoShips.reduce((acc, s) => acc + (s.size - s.hits.length), 0) / SHIPS.reduce((acc, s) => acc + s.size, 0)) * 100 : 100;
-  const getMiReyHealth = () => miReyShips.length > 0 ? (miReyShips.reduce((acc, s) => acc + (s.size - s.hits.length), 0) / SHIPS.reduce((acc, s) => acc + s.size, 0)) * 100 : 100;
-
+  // Attack handlers
   const handleAttackCellClick = (index: number) => {
-    if (activeOpponentBoard[index]) return; // already attacked
+    if (currentTurn !== currentUser || phase !== 'playing') return;
 
+    const activeOpponentBoard = currentUser === 'Sapo' ? miReyBoard : sapoBoard;
+    if (activeOpponentBoard[index]) return; // Already attacked
+
+    const opponentShips = currentUser === 'Sapo' ? miReyShips : sapoShips;
+    
     let hitShip = null;
     let isSunk = false;
 
-    // Check if it's a hit
+    // Check hit
     const updatedShips = opponentShips.map(ship => {
       if (ship.cells.includes(index)) {
         hitShip = ship;
@@ -190,69 +228,97 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
     });
 
     const isHit = !!hitShip;
-    setOpponentBoard(prev => ({ ...prev, [index]: isHit ? 'hit' : 'miss' }));
-    
     const coordName = getCoordName(index);
-    const attackerName = currentTurn;
+
+    const newLog: LogEntry = {
+      id: Date.now().toString(),
+      attacker: currentUser,
+      coord: coordName,
+      result: isHit ? (isSunk ? 'sunk' : 'hit') : 'miss',
+      shipName: isSunk ? hitShip!.name : undefined,
+      timeStr: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    const nextLogs = [newLog, ...logs];
+    const isGameOver = isHit && updatedShips.every(s => s.hits.length === s.size);
+
+    if (isGameOver) {
+      playWinSound();
+      setGameState(prev => ({
+        ...prev,
+        sapoShips: currentUser === 'Sapo' ? sapoShips : updatedShips,
+        miReyShips: currentUser === 'Mi Rey' ? miReyShips : updatedShips,
+        sapoBoard: currentUser === 'Mi Rey' ? { ...sapoBoard, [index]: 'hit' as const } : sapoBoard,
+        miReyBoard: currentUser === 'Sapo' ? { ...miReyBoard, [index]: 'hit' as const } : miReyBoard,
+        logs: nextLogs,
+        phase: 'game_over',
+        winner: currentUser,
+      }));
+      onUpdateScore(currentUser);
+      return;
+    }
 
     if (isHit) {
       playBattleshipHit();
-      setOpponentShips(updatedShips);
-      
-      const newLog: LogEntry = {
-        id: Date.now().toString(),
-        attacker: attackerName,
-        coord: coordName,
-        result: isSunk ? 'sunk' : 'hit',
-        shipName: isSunk ? hitShip!.name : undefined,
-        timeStr: 'Justo ahora',
-      };
-      setLogs(prev => [newLog, ...prev]);
-
-      // Check win condition
-      const allSunk = updatedShips.every(s => s.hits.length === s.size);
-      if (allSunk) {
-        playWinSound();
-        setPhase('game_over');
-        onUpdateScore(attackerName);
-      }
-      // If hit, you get another turn! (do not change currentTurn)
+      setGameState(prev => ({
+        ...prev,
+        sapoShips: currentUser === 'Sapo' ? sapoShips : updatedShips,
+        miReyShips: currentUser === 'Mi Rey' ? miReyShips : updatedShips,
+        sapoBoard: currentUser === 'Mi Rey' ? { ...sapoBoard, [index]: 'hit' as const } : sapoBoard,
+        miReyBoard: currentUser === 'Sapo' ? { ...miReyBoard, [index]: 'hit' as const } : miReyBoard,
+        logs: nextLogs,
+      }));
     } else {
       playBattleshipMiss();
-      const newLog: LogEntry = {
-        id: Date.now().toString(),
-        attacker: attackerName,
-        coord: coordName,
-        result: 'miss',
-        timeStr: 'Justo ahora',
-      };
-      setLogs(prev => [newLog, ...prev]);
-
-      // Miss = lose turn, pass phone
-      const nextPlayer = currentTurn === 'Sapo' ? 'Mi Rey' : 'Sapo';
-      setPassTo(nextPlayer);
-      setPhase('pass_phone');
+      // Miss switches turn
+      setGameState(prev => ({
+        ...prev,
+        sapoBoard: currentUser === 'Mi Rey' ? { ...sapoBoard, [index]: 'miss' as const } : sapoBoard,
+        miReyBoard: currentUser === 'Sapo' ? { ...miReyBoard, [index]: 'miss' as const } : miReyBoard,
+        logs: nextLogs,
+        currentTurn: currentUser === 'Sapo' ? 'Mi Rey' : 'Sapo',
+      }));
     }
   };
 
   const handleReset = () => {
     playCutePop();
-    setPhase('setup_sapo');
-    setSapoShips([]);
-    setMiReyShips([]);
-    setSapoBoard({});
-    setMiReyBoard({});
-    setLogs([]);
+    setGameState(defaultState);
+    setLocalShips([]);
     setActiveShipIdx(0);
-    setCurrentTurn('Sapo');
   };
 
-  // ── RENDERERS ─────────────────────────────────────────────────────────────
+  // Health helpers (percentage of non-sunk ship blocks remaining)
+  const getHealth = (ships: PlacedShip[]) => {
+    if (ships.length === 0) return 100;
+    const totalCells = SHIPS.reduce((acc, s) => acc + s.size, 0);
+    const hitCells = ships.reduce((acc, s) => acc + s.hits.length, 0);
+    return ((totalCells - hitCells) / totalCells) * 100;
+  };
 
-  // 1. SETUP UI
-  if (phase === 'setup_sapo' || phase === 'setup_mirey') {
-    const profile = getActiveProfile();
-    const isReady = currentSetupShips.length === SHIPS.length;
+  const sapoHealth = getHealth(sapoShips);
+  const miReyHealth = getHealth(miReyShips);
+
+  // Render setup screen
+  if (phase === 'setup') {
+    const isPlayerReady = currentUser === 'Sapo' ? sapoReady : miReyReady;
+    const isFleetComplete = localShips.length === SHIPS.length;
+
+    if (isPlayerReady) {
+      const otherPlayerName = currentUser === 'Sapo' ? miReyProfile.name : sapoProfile.name;
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6 p-6 text-white">
+          <span className="material-symbols-outlined text-6xl text-[#7adaa1] animate-pulse">sailing</span>
+          <h2 className="text-3xl font-display-lg">¡Flota confirmada! 🚢</h2>
+          <p className="text-[#e2bec0] max-w-md font-label-mono text-sm leading-relaxed">
+            Esperando a que <span className="text-[#fabc41] font-bold">{otherPlayerName}</span> coloque su flota para empezar la batalla...
+          </p>
+          <button onClick={onBack} className="bg-[#2f2348] border border-[#5a4042]/30 px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider text-[#e2bec0] hover:text-white font-bold transition-all">
+            Volver al Lobby
+          </button>
+        </div>
+      );
+    }
 
     return (
       <div className="relative pt-6 px-4 md:px-8 min-h-screen bg-[#221934] pb-32">
@@ -268,8 +334,8 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
           </div>
 
           <div className="text-center">
-            <h2 className="text-3xl font-display-lg text-white mb-2">¡{profile.name}, coloca tu flota!</h2>
-            <p className="text-[#e2bec0] font-label-mono text-xs">El otro jugador no debe mirar la pantalla 👀</p>
+            <h2 className="text-3xl font-display-lg text-white mb-2">¡Coloca tu flota, {currentUser === 'Sapo' ? sapoProfile.name : miReyProfile.name}! ⚓</h2>
+            <p className="text-[#e2bec0] font-label-mono text-xs">Posiciona tus 5 barcos en la cuadrícula de batalla.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
@@ -278,8 +344,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
               <div className="bg-[#1B112C]/95 backdrop-blur-2xl p-4 sm:p-6 rounded-3xl shadow-2xl border border-[#3A2E54]/50 w-full max-w-[450px]">
                 <div className="grid grid-cols-10 gap-1.5 w-full aspect-square relative">
                   {Array.from({ length: 100 }).map((_, i) => {
-                    const isOccupied = currentSetupShips.some(s => s.cells.includes(i));
-                    // Highlight logic for hover could go here, but keeping it simple for mobile
+                    const isOccupied = localShips.some(s => s.cells.includes(i));
                     return (
                       <button
                         key={i}
@@ -287,7 +352,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
                         className={`w-full h-full rounded-md flex items-center justify-center transition-all ${
                           isOccupied 
                             ? 'bg-[#7adaa1] shadow-[0_0_10px_rgba(122,218,161,0.5)] scale-105' 
-                            : 'bg-[#2A1D45]/40 hover:bg-[#3D2C63]/80 border border-[#4A3280]/30'
+                            : 'bg-[#2A1D45]/40 hover:bg-[#3D2C63]/80 border border-[#4A3280]/30 cursor-pointer'
                         }`}
                       ></button>
                     );
@@ -306,13 +371,13 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
                     className="flex items-center gap-2 bg-[#221934] px-3 py-1.5 rounded-lg border border-[#5a4042]/50 text-[#e2bec0] hover:text-white transition-colors"
                   >
                     <span className="material-symbols-outlined text-sm">{orientation === 'horizontal' ? 'swap_horiz' : 'swap_vert'}</span>
-                    <span className="font-label-caps text-[10px] uppercase">{orientation}</span>
+                    <span className="font-label-caps text-[10px] uppercase font-bold">{orientation === 'horizontal' ? 'Horiz' : 'Vert'}</span>
                   </button>
                 </div>
                 
                 <div className="flex flex-col gap-3">
                   {SHIPS.map((ship, idx) => {
-                    const placed = currentSetupShips.find(s => s.id === ship.id);
+                    const placed = localShips.find(s => s.id === ship.id);
                     const isSelected = activeShipIdx === idx;
                     
                     return (
@@ -321,12 +386,12 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
                         onClick={() => !placed && setActiveShipIdx(idx)}
                         className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
                           placed ? 'bg-[#7adaa1]/10 border-[#7adaa1]/30 opacity-60' 
-                          : isSelected ? 'bg-[#ff5470]/20 border-[#ff5470] shadow-[0_0_15px_rgba(255,84,112,0.2)] cursor-pointer' 
+                          : isSelected ? 'bg-[#ff5470]/20 border-[#ff5470] shadow-[0_0_15px_rgba(255,84,112,0.2)] cursor-pointer font-bold' 
                           : 'bg-[#201439] border-[#5a4042]/30 hover:bg-[#2a1d45] cursor-pointer'
                         }`}
                       >
                         <div className="flex flex-col">
-                          <span className={`font-bold ${placed ? 'text-[#7adaa1]' : isSelected ? 'text-white' : 'text-[#e2bec0]'}`}>{ship.name}</span>
+                          <span className={`${placed ? 'text-[#7adaa1]' : isSelected ? 'text-white' : 'text-[#e2bec0]'}`}>{ship.name}</span>
                           <span className="text-[10px] font-label-mono text-[#e2bec0]/70">{ship.size} casillas</span>
                         </div>
                         {placed ? (
@@ -347,10 +412,10 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
 
                 <button
                   onClick={handleConfirmFleet}
-                  disabled={!isReady}
+                  disabled={!isFleetComplete}
                   className={`w-full mt-6 font-headline-md text-sm py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all ${
-                    isReady 
-                      ? 'bg-[#7adaa1] hover:bg-[#8eeabb] text-[#13062b] shadow-[0_4px_0_#4a9b6c] active:shadow-none active:translate-y-1' 
+                    isFleetComplete 
+                      ? 'bg-[#7adaa1] hover:bg-[#8eeabb] text-[#13062b] shadow-[0_4px_0_#4a9b6c] active:shadow-none active:translate-y-1 cursor-pointer' 
                       : 'bg-[#221934] text-[#5a4042] cursor-not-allowed'
                   }`}
                 >
@@ -365,34 +430,16 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
     );
   }
 
-  // 2. PASS PHONE UI
-  if (phase === 'pass_phone') {
-    const nextProfile = passTo === 'Sapo' ? sapoProfile : miReyProfile;
-    const isSetupPass = sapoShips.length === 0 || miReyShips.length === 0;
+  // playing or game_over layout
+  const isSapo = currentUser === 'Sapo';
+  const myBoard = isSapo ? sapoBoard : miReyBoard;
+  const opponentBoard = isSapo ? miReyBoard : sapoBoard;
+  const myShips = isSapo ? sapoShips : miReyShips;
+  const opponentShips = isSapo ? miReyShips : sapoShips;
 
-    return (
-      <div className="fixed inset-0 z-50 bg-[#13062b] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-24 h-24 mb-6">
-          <img src={nextProfile.avatar} alt={nextProfile.name} className="w-full h-full object-cover rounded-full shadow-[0_0_30px_rgba(122,218,161,0.5)] border-4 border-[#7adaa1]" />
-        </div>
-        <h2 className="text-4xl md:text-5xl font-display-lg text-white mb-2">¡Pasa el teléfono a {nextProfile.name}!</h2>
-        <p className="text-[#e2bec0] font-label-mono mb-12">
-          {isSetupPass ? 'Es hora de colocar tu flota en secreto.' : '¡Es tu turno de atacar! Que el otro no mire.'}
-        </p>
-        <button
-          onClick={handlePassPhoneReady}
-          className="bg-[#ff5470] hover:bg-[#ff6b84] text-white font-headline-md text-lg px-10 py-4 rounded-2xl shadow-[0_4px_0_#91002c] active:shadow-none active:translate-y-1 transition-all"
-        >
-          ¡Soy yo, estoy listo!
-        </button>
-      </div>
-    );
-  }
-
-  // 3. PLAYING / GAME OVER UI
   return (
     <div className="relative pt-6 px-4 md:px-8 min-h-screen bg-[#221934] pb-32">
-      <div className="flex flex-col w-full max-w-6xl mx-auto gap-6 md:gap-8">
+      <div className="flex flex-col w-full max-w-6xl mx-auto gap-6 md:gap-8 text-white">
         {/* Top bar with back button */}
         <div className="flex justify-between items-center">
           <button
@@ -403,118 +450,162 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
             Salir de la partida
           </button>
           <span className="font-label-mono text-xs text-[#e2bec0] uppercase tracking-widest">
-            Tablero de Ataque
+            Combate en Tiempo Real 📡
           </span>
         </div>
+
+        {/* Prominent Winner Banner if Game Over */}
+        {phase === 'game_over' && winner && (
+          <div className="bg-[#7adaa1]/20 border-2 border-[#7adaa1] rounded-[2rem] p-6 text-center shadow-[0_0_30px_rgba(122,218,161,0.2)] animate-bounce mb-2">
+            <h2 className="text-3xl sm:text-4xl font-display-lg text-[#7adaa1] font-bold mb-1">
+              🏆 ¡Victoria de {winner === 'Sapo' ? sapoProfile.name : miReyProfile.name}! 🏆
+            </h2>
+            <p className="text-white text-sm font-label-mono uppercase tracking-wider">
+              ¡Ha hundido toda la flota enemiga! 🎉🚢💥
+            </p>
+          </div>
+        )}
 
         {/* Status / Player Score Panel */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
           {/* Player 1: Sapo */}
-          <div className={`flex items-center gap-4 bg-[#2f2348]/70 backdrop-blur-xl p-4 rounded-2xl border ${currentTurn === 'Sapo' && phase !== 'game_over' ? 'border-[#7adaa1] shadow-[0_0_15px_rgba(122,218,161,0.2)]' : 'border-[#5a4042]/30'} relative overflow-hidden transition-all`}>
-            <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
+          <div className={`flex items-center gap-4 bg-[#2f2348]/70 backdrop-blur-xl p-4 rounded-2xl border ${currentTurn === 'Sapo' && phase === 'playing' ? 'border-[#7adaa1] shadow-[0_0_15px_rgba(122,218,161,0.2)]' : 'border-[#5a4042]/30'} relative overflow-hidden transition-all`}>
+            <div className="relative w-14 h-14 shrink-0">
               <img src={sapoProfile.avatar} className="w-full h-full object-cover rounded-full shadow-md z-10 relative" />
-              <div className={`absolute inset-0 rounded-full ring-4 ${currentTurn === 'Sapo' ? 'ring-[#7adaa1]' : 'ring-transparent'} ring-offset-2 ring-offset-[#2f2348] z-20 transition-all`}></div>
+              <div className={`absolute inset-0 rounded-full ring-4 ${currentTurn === 'Sapo' && phase === 'playing' ? 'ring-[#7adaa1]' : 'ring-transparent'} ring-offset-2 ring-offset-[#2f2348] z-20 transition-all`}></div>
             </div>
             <div className="flex flex-col flex-1 gap-1 z-10">
               <div className="flex justify-between items-center">
                 <span className="text-base font-bold text-white">{sapoProfile.name}</span>
-                {currentTurn === 'Sapo' && phase !== 'game_over' && (
-                  <span className="text-[10px] font-label-caps text-[#180c30] bg-[#7adaa1] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold animate-pulse">Tu Turno</span>
+                {currentTurn === 'Sapo' && phase === 'playing' && (
+                  <span className="text-[10px] font-label-caps text-[#180c30] bg-[#7adaa1] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold animate-pulse">Atacando</span>
                 )}
               </div>
               <div className="w-full bg-[#13062b] rounded-full h-2 overflow-hidden mt-1">
-                <div className="bg-[#7adaa1] h-full rounded-full transition-all duration-500" style={{ width: `${getSapoHealth()}%` }}></div>
+                <div className="bg-[#7adaa1] h-full rounded-full transition-all duration-500" style={{ width: `${sapoHealth}%` }}></div>
               </div>
-              <div className="text-[10px] text-[#e2bec0] font-label-mono text-right">Flota: {Math.round(getSapoHealth())}%</div>
+              <div className="text-[10px] text-[#e2bec0] font-label-mono text-right">Flota: {Math.round(sapoHealth)}%</div>
             </div>
           </div>
 
           {/* Center Title */}
           <div className="flex flex-col items-center justify-center text-center">
             <span className="text-3xl font-display-lg text-[#ffb2b8] drop-shadow-[0_0_16px_rgba(255,178,184,0.4)]">
-              {phase === 'game_over' ? '¡Juego Terminado!' : '¡Batalla!'}
+              {phase === 'game_over' ? 'Fin de la Partida' : '¡Batalla Naval!'}
             </span>
             <span className="text-xs font-label-mono text-[#e2bec0] uppercase tracking-widest mt-1">
-              Hundir la Flota ⚓
+              {currentTurn === currentUser && phase === 'playing' ? '🟢 ¡Es tu turno de disparar!' : '🔴 Esperando turno del rival...'}
             </span>
           </div>
 
           {/* Player 2: Mi Rey */}
-          <div className={`flex items-center gap-4 bg-[#2f2348]/70 backdrop-blur-xl p-4 rounded-2xl border ${currentTurn === 'Mi Rey' && phase !== 'game_over' ? 'border-[#fabc41] shadow-[0_0_15px_rgba(250,188,65,0.2)]' : 'border-[#5a4042]/30'} relative overflow-hidden transition-all`}>
+          <div className={`flex items-center gap-4 bg-[#2f2348]/70 backdrop-blur-xl p-4 rounded-2xl border ${currentTurn === 'Mi Rey' && phase === 'playing' ? 'border-[#fabc41] shadow-[0_0_15px_rgba(250,188,65,0.2)]' : 'border-[#5a4042]/30'} relative overflow-hidden transition-all`}>
             <div className="flex flex-col flex-1 gap-1 z-10">
               <div className="flex justify-between items-center">
-                {currentTurn === 'Mi Rey' && phase !== 'game_over' && (
-                  <span className="text-[10px] font-label-caps text-[#2e2a14] bg-[#fabc41] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold animate-pulse">Tu Turno</span>
+                {currentTurn === 'Mi Rey' && phase === 'playing' && (
+                  <span className="text-[10px] font-label-caps text-[#2e2a14] bg-[#fabc41] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold animate-pulse">Atacando</span>
                 )}
                 <span className="text-base font-bold text-white ml-auto">{miReyProfile.name}</span>
               </div>
               <div className="w-full bg-[#13062b] rounded-full h-2 overflow-hidden mt-1 flex justify-end">
-                <div className="bg-[#fabc41] h-full rounded-full transition-all duration-500" style={{ width: `${getMiReyHealth()}%` }}></div>
+                <div className="bg-[#fabc41] h-full rounded-full transition-all duration-500" style={{ width: `${miReyHealth}%` }}></div>
               </div>
-              <div className="text-[10px] text-[#e2bec0] font-label-mono text-left">Flota: {Math.round(getMiReyHealth())}%</div>
+              <div className="text-[10px] text-[#e2bec0] font-label-mono text-left">Flota: {Math.round(miReyHealth)}%</div>
             </div>
-            <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
+            <div className="relative w-14 h-14 shrink-0">
               <img src={miReyProfile.avatar} className="w-full h-full object-cover rounded-full shadow-md z-10 relative" />
-              <div className={`absolute inset-0 rounded-full ring-4 ${currentTurn === 'Mi Rey' ? 'ring-[#fabc41]' : 'ring-transparent'} ring-offset-2 ring-offset-[#2f2348] z-20 transition-all`}></div>
+              <div className={`absolute inset-0 rounded-full ring-4 ${currentTurn === 'Mi Rey' && phase === 'playing' ? 'ring-[#fabc41]' : 'ring-transparent'} ring-offset-2 ring-offset-[#2f2348] z-20 transition-all`}></div>
             </div>
           </div>
         </div>
 
-        {/* Main Grid & Battle Log Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full mt-4">
-          {/* Game Board (8 cols on lg) */}
-          <div className="lg:col-span-8 flex flex-col items-center w-full relative">
-            <h3 className="text-white font-headline-md mb-4 text-center">
-              {phase === 'game_over' ? 'Tablero Final' : `Atacando a ${currentTurn === 'Sapo' ? miReyProfile.name : sapoProfile.name}`}
-            </h3>
-            <div className="bg-[#1B112C]/95 backdrop-blur-2xl p-4 sm:p-6 rounded-3xl shadow-2xl border border-[#3A2E54]/50 w-full max-w-[550px]">
-              <div className="grid grid-cols-10 gap-1 sm:gap-1.5 w-full aspect-square">
-                {Array.from({ length: 100 }).map((_, i) => {
-                  const state = activeOpponentBoard[i];
-                  const hitShip = opponentShips.find(s => s.cells.includes(i));
-                  const isSunk = hitShip && hitShip.hits.length === hitShip.size;
-                  
-                  return (
-                    <button
-                      key={i}
-                      disabled={phase === 'game_over'}
-                      onClick={() => handleAttackCellClick(i)}
-                      className={`w-full h-full rounded-md sm:rounded-lg flex items-center justify-center transition-all shadow-inner select-none ${
-                        state === 'hit'
-                          ? isSunk 
-                            ? 'bg-[#91002c] border border-[#ff5470] shadow-[inset_0_0_15px_rgba(255,84,112,0.5)]'
-                            : 'bg-[#ff5470]/25 border border-[#ff5470]/60 shadow-[inset_0_0_15px_rgba(255,84,112,0.3)] animate-pop'
-                          : state === 'miss'
-                          ? 'bg-[#1F1433] border border-[#2F214A]'
-                          : 'bg-[#2A1D45]/40 hover:bg-[#3D2C63]/80 border border-[#4A3280]/30 hover:scale-105'
-                      }`}
-                      title={getCoordName(i)}
-                    >
-                      {state === 'hit' && (
-                        <span className={`material-symbols-outlined ${isSunk ? 'text-white' : 'text-[#ff5470]'} text-sm sm:text-xl drop-shadow-[0_0_10px_rgba(255,84,112,0.8)]`} style={{ fontVariationSettings: "'FILL' 1" }}>
-                          {isSunk ? 'sailing' : 'favorite'}
-                        </span>
-                      )}
-                      {state === 'miss' && (
-                        <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#5C4D82]"></div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex justify-between items-center mt-4 px-2 text-[10px] sm:text-[11px] font-label-mono text-[#e2bec0]">
-                <div className="flex gap-4">
-                  <span className="flex items-center gap-1"><span className="text-[#ff5470]">❤️</span> Impacto</span>
-                  <span className="flex items-center gap-1">🚢 Hundido</span>
+        {/* Grids and Log */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Main Board Area (Attacking and Defensive) */}
+          <div className="lg:col-span-8 flex flex-col gap-8 w-full items-center">
+            {/* Board 1: Attack Board (Your targeting of the opponent's grid) */}
+            <div className="w-full max-w-[500px] flex flex-col items-center">
+              <h3 className="text-sm font-label-mono text-[#ffb2b8] mb-3 uppercase tracking-wider">
+                🎯 Tablero de Ataque (Radar Enemigo)
+              </h3>
+              <div className="bg-[#1B112C]/95 backdrop-blur-2xl p-4 sm:p-5 rounded-3xl shadow-2xl border border-[#3A2E54]/50 w-full aspect-square">
+                <div className="grid grid-cols-10 gap-1 w-full h-full">
+                  {Array.from({ length: 100 }).map((_, i) => {
+                    const state = opponentBoard[i];
+                    // Find if Sapo has hit Mi Rey's ships in this cell, and if it's sunk
+                    const opponentShipHit = opponentShips.find(s => s.cells.includes(i));
+                    const isSunk = opponentShipHit && opponentShipHit.hits.length === opponentShipHit.size;
+                    const isMyTurn = currentTurn === currentUser && phase === 'playing';
+
+                    return (
+                      <button
+                        key={i}
+                        disabled={!isMyTurn || state !== undefined}
+                        onClick={() => handleAttackCellClick(i)}
+                        className={`w-full h-full rounded-md flex items-center justify-center transition-all ${
+                          state === 'hit'
+                            ? isSunk 
+                              ? 'bg-[#91002c] border border-[#ff5470] shadow-[inset_0_0_15px_rgba(255,84,112,0.5)]'
+                              : 'bg-[#ff5470]/30 border border-[#ff5470]/60'
+                            : state === 'miss'
+                            ? 'bg-[#1F1433] border border-[#2F214A]'
+                            : isMyTurn
+                            ? 'bg-[#2A1D45]/40 hover:bg-[#3D2C63]/80 border border-[#4A3280]/30 hover:scale-105 cursor-pointer'
+                            : 'bg-[#2A1D45]/20 border border-[#4A3280]/10 cursor-not-allowed'
+                        }`}
+                      >
+                        {state === 'hit' && (
+                          <span className={`material-symbols-outlined ${isSunk ? 'text-white' : 'text-[#ff5470]'} text-[10px] sm:text-base`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                            {isSunk ? 'sailing' : 'favorite'}
+                          </span>
+                        )}
+                        {state === 'miss' && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#5c4d82]/60"></div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-                <span>• = Agua</span>
+              </div>
+            </div>
+
+            {/* Board 2: Defensive Board (Your ships and opponent's attacks on you) */}
+            <div className="w-full max-w-[320px] flex flex-col items-center opacity-85">
+              <h3 className="text-xs font-label-mono text-[#7adaa1] mb-2 uppercase tracking-wider">
+                🛡️ Mi Flota (Tablero de Defensa)
+              </h3>
+              <div className="bg-[#1B112C]/80 p-3 rounded-2xl border border-[#3A2E54]/30 w-full aspect-square">
+                <div className="grid grid-cols-10 gap-1 w-full h-full">
+                  {Array.from({ length: 100 }).map((_, i) => {
+                    const state = myBoard[i]; // Opponent attacks on my board
+                    const hasMyShip = myShips.some(s => s.cells.includes(i));
+                    
+                    return (
+                      <div
+                        key={i}
+                        className={`w-full h-full rounded-sm flex items-center justify-center text-[8px] ${
+                          hasMyShip
+                            ? state === 'hit'
+                              ? 'bg-[#91002c] text-white border border-[#ff5470]'
+                              : 'bg-[#7adaa1]/40 border border-[#7adaa1]/30'
+                            : state === 'miss'
+                            ? 'bg-[#1F1433]'
+                            : 'bg-[#2A1D45]/10 border border-[#4A3280]/5'
+                        }`}
+                      >
+                        {state === 'hit' && <span>💥</span>}
+                        {state === 'miss' && <div className="w-1 h-1 rounded-full bg-[#5c4d82]/40"></div>}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Battle Log (4 cols on lg) */}
-          <div className="lg:col-span-4 flex flex-col gap-4">
-            <div className="bg-[#2f2348]/70 backdrop-blur-xl border border-[#5a4042]/30 rounded-3xl p-5 flex flex-col h-[500px] shadow-lg">
+          {/* Battle Log */}
+          <div className="lg:col-span-4 flex flex-col gap-4 w-full">
+            <div className="bg-[#2f2348]/70 backdrop-blur-xl border border-[#5a4042]/30 rounded-3xl p-5 flex flex-col h-[500px] shadow-lg w-full">
               <h3 className="text-lg font-headline-md text-white mb-3 flex items-center gap-2 border-b border-[#5a4042]/30 pb-2 shrink-0">
                 <span className="material-symbols-outlined text-[#ff5470]">receipt_long</span>
                 Log de Batalla
@@ -543,7 +634,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
                         </span>{' '}
                         atacó {log.coord}.{' '}
                         <span className="font-bold text-white">
-                          {log.result === 'hit' ? '¡Impacto! ❤️ (Tira de nuevo)' : log.result === 'sunk' ? `¡Hundido! (${log.shipName})` : '¡Agua! 🌊'}
+                          {log.result === 'hit' ? '¡Impacto! ❤️ (Sigue atacando)' : log.result === 'sunk' ? `¡Hundido! (${log.shipName})` : '¡Agua! 🌊'}
                         </span>
                       </div>
                       <div className="text-[10px] opacity-60 mt-0.5">{log.timeStr}</div>
@@ -553,17 +644,10 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
               </div>
 
               <div className="pt-4 mt-auto border-t border-[#5a4042]/30 shrink-0">
-                {phase === 'game_over' ? (
-                   <button onClick={handleReset} className="w-full bg-[#7adaa1] hover:bg-[#8eeabb] text-[#13062b] font-headline-md text-sm py-3 rounded-xl shadow-[0_4px_0_#4a9b6c] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-2 font-bold">
-                    <span className="material-symbols-outlined text-base">replay</span>
-                    Jugar la Revancha
-                  </button>
-                ) : (
-                  <button onClick={handleReset} className="w-full bg-[#201439] hover:bg-[#2a1d45] border border-[#5a4042]/50 text-[#e2bec0] hover:text-white font-headline-md text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2 font-bold">
-                    <span className="material-symbols-outlined text-base">flag</span>
-                    Rendirse / Reiniciar
-                  </button>
-                )}
+                <button onClick={handleReset} className="w-full bg-[#ff5470] hover:bg-[#ff6b84] text-white font-headline-md text-sm py-3 rounded-xl shadow-[0_4px_0_#91002c] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-2 font-bold">
+                  <span className="material-symbols-outlined text-base">replay</span>
+                  Reiniciar / Nueva Partida
+                </button>
               </div>
             </div>
           </div>

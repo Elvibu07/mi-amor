@@ -1,26 +1,49 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { UserProfile } from '../types';
 import { playCutePop, playWinSound, playHeartSound } from '../utils/audio';
+import { useSyncedDoc } from '../lib/useFirestore';
 
 interface TicTacToeGameProps {
   onBack: () => void;
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
   onUpdateScore: (winner: 'Sapo' | 'Mi Rey') => void;
+  currentUser: 'Sapo' | 'Mi Rey';
 }
+
+interface TicTacToeSyncState {
+  board: string[];
+  currentPlayer: 'X' | 'O'; // X = Sapo (❤️), O = Mi Rey (⭐)
+  gameActive: boolean;
+  winningCombo: number[] | null;
+  scoreX: number;
+  scoreO: number;
+}
+
+const defaultState: TicTacToeSyncState = {
+  board: Array(9).fill(''),
+  currentPlayer: 'X',
+  gameActive: true,
+  winningCombo: null,
+  scoreX: 0,
+  scoreO: 0,
+};
 
 export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
   onBack,
   sapoProfile,
   miReyProfile,
   onUpdateScore,
+  currentUser,
 }) => {
-  const [board, setBoard] = useState<string[]>(Array(9).fill(''));
-  const [currentPlayer, setCurrentPlayer] = useState<'X' | 'O'>('X'); // X = Sapo (❤️), O = Mi Rey (⭐)
-  const [gameActive, setGameActive] = useState(true);
-  const [scoreX, setScoreX] = useState(0);
-  const [scoreO, setScoreO] = useState(0);
-  const [winningCombo, setWinningCombo] = useState<number[] | null>(null);
+  const [gameState, setGameState] = useSyncedDoc<TicTacToeSyncState>(
+    'shared',
+    'tictactoe_state',
+    'ourlobby_tictactoe',
+    defaultState
+  );
+
+  const { board, currentPlayer, gameActive, winningCombo, scoreX, scoreO } = gameState;
 
   const winConditions = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
@@ -28,12 +51,16 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
     [0, 4, 8], [2, 4, 6],            // Diagonals
   ];
 
+  // Helper to determine if it's the current player's turn to play
+  const isMyTurn = (currentUser === 'Sapo' && currentPlayer === 'X') || 
+                   (currentUser === 'Mi Rey' && currentPlayer === 'O');
+
   const handleCellClick = (index: number) => {
-    if (board[index] !== '' || !gameActive) return;
+    if (!isMyTurn || board[index] !== '' || !gameActive) return;
 
     const newBoard = [...board];
     newBoard[index] = currentPlayer;
-    setBoard(newBoard);
+    
     playCutePop();
 
     // Check Win
@@ -50,35 +77,64 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
     }
 
     if (won && combo) {
-      setWinningCombo(combo);
-      setGameActive(false);
       playWinSound();
-      if (currentPlayer === 'X') {
-        setScoreX((s) => s + 1);
-        onUpdateScore('Sapo');
-      } else {
-        setScoreO((s) => s + 1);
-        onUpdateScore('Mi Rey');
-      }
+      const newScoreX = currentPlayer === 'X' ? scoreX + 1 : scoreX;
+      const newScoreO = currentPlayer === 'O' ? scoreO + 1 : scoreO;
+      
+      setGameState({
+        board: newBoard,
+        currentPlayer: currentPlayer, // Keep as the winner's mark for UI
+        gameActive: false,
+        winningCombo: combo,
+        scoreX: newScoreX,
+        scoreO: newScoreO,
+      });
+
+      // Update global scoreboard
+      onUpdateScore(currentPlayer === 'X' ? 'Sapo' : 'Mi Rey');
       return;
     }
 
     if (!newBoard.includes('')) {
       // Draw
-      setGameActive(false);
       playHeartSound();
+      setGameState({
+        board: newBoard,
+        currentPlayer: currentPlayer,
+        gameActive: false,
+        winningCombo: null,
+        scoreX,
+        scoreO,
+      });
       return;
     }
 
-    setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X');
+    // Switch player
+    setGameState({
+      board: newBoard,
+      currentPlayer: currentPlayer === 'X' ? 'O' : 'X',
+      gameActive,
+      winningCombo,
+      scoreX,
+      scoreO,
+    });
   };
 
   const handleReset = () => {
-    setBoard(Array(9).fill(''));
-    setWinningCombo(null);
-    setGameActive(true);
-    setCurrentPlayer('X');
     playCutePop();
+    setGameState({
+      board: Array(9).fill(''),
+      currentPlayer: 'X', // Sapo goes first on reset
+      gameActive: true,
+      winningCombo: null,
+      scoreX,
+      scoreO,
+    });
+  };
+
+  const handleResetAll = () => {
+    playCutePop();
+    setGameState(defaultState);
   };
 
   const isDraw = !board.includes('') && !winningCombo;
@@ -104,7 +160,7 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
           </h1>
           <p className="font-label-mono text-xs text-[#e2bec0] uppercase tracking-widest flex items-center gap-3">
             <span className="w-8 h-px bg-[#5a4042]"></span>
-            Duelo rápido de amor
+            Duelo en tiempo real ⚡
             <span className="w-8 h-px bg-[#5a4042]"></span>
           </p>
         </div>
@@ -120,8 +176,7 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
 
           {/* Player 1: Sapo */}
           <div
-            onClick={() => currentPlayer !== 'X' && setCurrentPlayer('X')}
-            className={`flex-1 flex items-center justify-start gap-3 md:gap-4 px-4 sm:px-6 py-3 relative z-10 cursor-pointer transition-opacity ${
+            className={`flex-1 flex items-center justify-start gap-3 md:gap-4 px-4 sm:px-6 py-3 relative z-10 transition-opacity ${
               currentPlayer === 'X' ? 'opacity-100' : 'opacity-60'
             }`}
           >
@@ -152,8 +207,7 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
 
           {/* Player 2: Mi Rey */}
           <div
-            onClick={() => currentPlayer !== 'O' && setCurrentPlayer('O')}
-            className={`flex-1 flex items-center justify-end gap-3 md:gap-4 px-4 sm:px-6 py-3 relative z-10 cursor-pointer transition-opacity ${
+            className={`flex-1 flex items-center justify-end gap-3 md:gap-4 px-4 sm:px-6 py-3 relative z-10 transition-opacity ${
               currentPlayer === 'O' ? 'opacity-100' : 'opacity-60'
             }`}
           >
@@ -187,11 +241,14 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
               return (
                 <button
                   key={idx}
+                  disabled={!isMyTurn && gameActive}
                   onClick={() => handleCellClick(idx)}
                   className={`rounded-2xl sm:rounded-[1.75rem] flex items-center justify-center text-4xl sm:text-6xl font-bold transition-all shadow-[inset_0_1px_2px_rgba(255,255,255,0.05),0_8px_16px_rgba(0,0,0,0.3)] border border-white/5 ${
                     isWinningCell
                       ? 'bg-[#ff5470]/30 border-[#ff5470] scale-105 ring-2 ring-[#ff5470]'
-                      : 'bg-[#3a2e54]/50 hover:bg-[#3a2e54]/90 hover:-translate-y-1'
+                      : isMyTurn && gameActive && board[idx] === ''
+                      ? 'bg-[#3a2e54]/50 hover:bg-[#3a2e54]/90 hover:-translate-y-1 cursor-pointer'
+                      : 'bg-[#3a2e54]/30 cursor-not-allowed opacity-80'
                   } active:translate-y-0`}
                 >
                   {cell === 'X' && (
@@ -221,20 +278,28 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
               <span className="text-[#e2bec0] font-bold">¡Empate de amor! 🤝</span>
             ) : (
               <span className={currentPlayer === 'X' ? 'text-[#ff5470] animate-pulse' : 'text-[#fabc41] animate-pulse'}>
-                Turno de {currentPlayer === 'X' ? `${sapoProfile.name} (❤️)` : `${miReyProfile.name} (⭐)`}
+                {isMyTurn ? '¡Es tu turno!' : `Esperando a ${currentPlayer === 'X' ? sapoProfile.name : miReyProfile.name}...`}
               </span>
             )}
           </div>
 
-          <button
-            onClick={handleReset}
-            className="bg-[#ff5470] hover:bg-[#ff6b84] text-white font-label-caps text-xs sm:text-sm uppercase tracking-widest py-3.5 px-8 rounded-full shadow-[0_0_24px_rgba(255,84,112,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group font-bold"
-          >
-            <span className="material-symbols-outlined text-[20px] group-hover:-rotate-180 transition-transform duration-500">
-              refresh
-            </span>
-            Reiniciar Partida
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleReset}
+              className="bg-[#ff5470] hover:bg-[#ff6b84] text-white font-label-caps text-xs sm:text-sm uppercase tracking-widest py-3.5 px-6 rounded-full shadow-[0_0_24px_rgba(255,84,112,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group font-bold"
+            >
+              <span className="material-symbols-outlined text-[20px] group-hover:-rotate-180 transition-transform duration-500">
+                refresh
+              </span>
+              Siguiente Ronda
+            </button>
+            <button
+              onClick={handleResetAll}
+              className="bg-[#201439] hover:bg-[#2a1d45] border border-[#5a4042]/50 text-[#e2bec0] hover:text-white font-label-caps text-xs sm:text-sm uppercase tracking-widest py-3.5 px-6 rounded-full hover:scale-105 active:scale-95 transition-all flex items-center gap-2 font-bold"
+            >
+              Reiniciar Marcador
+            </button>
+          </div>
         </div>
       </div>
     </div>

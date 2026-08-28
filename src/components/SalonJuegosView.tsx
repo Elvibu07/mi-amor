@@ -41,7 +41,7 @@ export const SalonJuegosView: React.FC<SalonJuegosViewProps> = ({
           <div className="flex gap-4 mt-4 z-10">
             <div className="bg-[#2f2348] px-6 py-3 rounded-2xl flex flex-col items-center border border-[#5a4042]/30 shadow-lg min-w-[120px]">
               <span className="font-label-caps text-[10px] text-[#e2bec0] uppercase tracking-wider mb-0.5">
-                Victorias {sapoProfile.name} (GYE)
+                Victorias {sapoProfile.name} ({sapoProfile.city})
               </span>
               <span className="font-headline-lg text-3xl sm:text-4xl text-[#ff5470] font-bold">
                 {gameScore.victoriasGYE}
@@ -49,7 +49,7 @@ export const SalonJuegosView: React.FC<SalonJuegosViewProps> = ({
             </div>
             <div className="bg-[#2f2348] px-6 py-3 rounded-2xl flex flex-col items-center border border-[#5a4042]/30 shadow-lg min-w-[120px]">
               <span className="font-label-caps text-[10px] text-[#e2bec0] uppercase tracking-wider mb-0.5">
-                Victorias {miReyProfile.name} (MAD)
+                Victorias {miReyProfile.name} ({miReyProfile.city})
               </span>
               <span className="font-headline-lg text-3xl sm:text-4xl text-[#fabc41] font-bold">
                 {gameScore.victoriasMAD}

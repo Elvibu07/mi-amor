@@ -14,93 +14,113 @@ interface WordLocation {
   hint: string;
 }
 
+const ROMANTIC_WORDS = [
+  'AMOR', 'SAPO', 'REY', 'JUNTOS', 'SIEMPRE', 'TEAMO', 'BESO', 'ABRAZO',
+  'NOVIOS', 'CORAZON', 'DULCE', 'CARINO', 'MIMOS', 'FECHAS', 'LOBBY',
+  'DISTANCIA', 'CARTAS', 'SUEÑOS', 'VIDA', 'CIELO', 'ESTRELLA', 'MAGIA',
+  'LOCO', 'FLOR', 'SOL', 'LUNA', 'ANHELO', 'ILUSION', 'ETERNO', 'PASION'
+];
+
+function generateWordSearch(wordList: string[]): { grid: string[][]; words: WordLocation[] } {
+  const size = 10;
+  const grid: string[][] = Array(size).fill(null).map(() => Array(size).fill(''));
+  
+  // Pick 6 random unique words
+  const shuffled = [...wordList].sort(() => 0.5 - Math.random());
+  const selectedWords = shuffled.slice(0, 6);
+  const placedWords: WordLocation[] = [];
+
+  for (const word of selectedWords) {
+    let placed = false;
+    let attempts = 0;
+
+    while (!placed && attempts < 150) {
+      attempts++;
+      const isHorizontal = Math.random() > 0.5;
+      const row = Math.floor(Math.random() * size);
+      const col = Math.floor(Math.random() * size);
+
+      if (isHorizontal) {
+        if (col + word.length > size) continue;
+        // Check overlaps
+        let canPlace = true;
+        for (let i = 0; i < word.length; i++) {
+          if (grid[row][col + i] !== '' && grid[row][col + i] !== word[i]) {
+            canPlace = false;
+            break;
+          }
+        }
+        if (canPlace) {
+          const coords = [];
+          for (let i = 0; i < word.length; i++) {
+            grid[row][col + i] = word[i];
+            coords.push({ row, col: col + i });
+          }
+          placedWords.push({
+            word,
+            coords,
+            hint: `Fila ${row + 1} horizontal`,
+          });
+          placed = true;
+        }
+      } else {
+        if (row + word.length > size) continue;
+        // Check overlaps
+        let canPlace = true;
+        for (let i = 0; i < word.length; i++) {
+          if (grid[row + i][col] !== '' && grid[row + i][col] !== word[i]) {
+            canPlace = false;
+            break;
+          }
+        }
+        if (canPlace) {
+          const coords = [];
+          for (let i = 0; i < word.length; i++) {
+            grid[row + i][col] = word[i];
+            coords.push({ row: row + i, col });
+          }
+          placedWords.push({
+            word,
+            coords,
+            hint: `Columna ${col + 1} vertical`,
+          });
+          placed = true;
+        }
+      }
+    }
+  }
+
+  // Fill empty spots with random letters
+  const alphabet = 'ABCDEFGHIJKLMNÑOPQRSTUVXYZ';
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (grid[r][c] === '') {
+        grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+      }
+    }
+  }
+
+  return { grid, words: placedWords };
+}
+
 export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   onBack,
   sapoProfile,
   miReyProfile,
 }) => {
-  // 10x10 Matrix layout
-  // Secret words placed in the grid:
-  // AMOR (Row 0, Col 0-3)
-  // SAPO (Row 2, Col 0-3)
-  // MADRID (Col 9, Row 3-8)
-  // REY (Row 6, Col 1-3)
-  // JUNTOS (Row 8, Col 2-7)
-  // SIEMPRE (Row 1, Col 0-6)
-  // HOLA (Col 2, Row 0-3)
-
-  const initialWords: WordLocation[] = [
-    {
-      word: 'SIEMPRE',
-      coords: [
-        { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 },
-        { row: 1, col: 3 }, { row: 1, col: 4 }, { row: 1, col: 5 }, { row: 1, col: 6 }
-      ],
-      hint: 'Fila 2 horizontal',
-    },
-    {
-      word: 'AMOR',
-      coords: [
-        { row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }
-      ],
-      hint: 'Fila 1 horizontal',
-    },
-    {
-      word: 'MADRID',
-      coords: [
-        { row: 3, col: 9 }, { row: 4, col: 9 }, { row: 5, col: 9 },
-        { row: 6, col: 9 }, { row: 7, col: 9 }, { row: 8, col: 9 }
-      ],
-      hint: 'Columna 10 vertical',
-    },
-    {
-      word: 'SAPO',
-      coords: [
-        { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 3 }
-      ],
-      hint: 'Fila 3 horizontal',
-    },
-    {
-      word: 'REY',
-      coords: [
-        { row: 6, col: 1 }, { row: 6, col: 2 }, { row: 6, col: 3 }
-      ],
-      hint: 'Fila 7 horizontal',
-    },
-    {
-      word: 'JUNTOS',
-      coords: [
-        { row: 8, col: 2 }, { row: 8, col: 3 }, { row: 8, col: 4 },
-        { row: 8, col: 5 }, { row: 8, col: 6 }, { row: 8, col: 7 }
-      ],
-      hint: 'Fila 9 horizontal',
-    },
-  ];
-
-  // Build 10x10 letters grid
-  const initialGrid: string[][] = [
-    ['A', 'M', 'O', 'R', 'A', 'X', 'P', 'Q', 'Z', 'W'],
-    ['S', 'I', 'E', 'M', 'P', 'R', 'E', 'K', 'M', 'A'],
-    ['S', 'A', 'P', 'O', 'U', 'O', 'N', 'P', 'D', 'M'],
-    ['T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'A'],
-    ['F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'D'],
-    ['V', 'B', 'N', 'M', 'Q', 'W', 'E', 'R', 'T', 'R'],
-    ['K', 'R', 'E', 'Y', 'U', 'I', 'O', 'P', 'A', 'I'],
-    ['S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Ñ', 'D'],
-    ['Z', 'X', 'J', 'U', 'N', 'T', 'O', 'S', 'C', 'V'],
-    ['B', 'N', 'M', 'L', 'K', 'J', 'H', 'G', 'F', 'D'],
-  ];
-
-  const [foundWords, setFoundWords] = useState<string[]>(['AMOR']);
+  const [gameState, setGameState] = useState(() => generateWordSearch(ROMANTIC_WORDS));
+  const [foundWords, setFoundWords] = useState<string[]>([]);
   const [selectedCells, setSelectedCells] = useState<{ row: number; col: number }[]>([]);
   const [activeHint, setActiveHint] = useState<string | null>(null);
+
+  const { grid, words } = gameState;
 
   const isCellSelected = (r: number, c: number) => {
     return selectedCells.some((cell) => cell.row === r && cell.col === c);
   };
 
   const isCellFound = (r: number, c: number) => {
-    return initialWords.some((w) =>
+    return words.some((w) =>
       foundWords.includes(w.word) &&
       w.coords.some((coord) => coord.row === r && coord.col === c)
     );
@@ -120,7 +140,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
     setSelectedCells(newSelected);
 
     // Check if the selected cells form any of the words
-    for (const w of initialWords) {
+    for (const w of words) {
       if (!foundWords.includes(w.word)) {
         const matchesWord =
           w.coords.length === newSelected.length &&
@@ -133,7 +153,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
           setFoundWords(updated);
           setSelectedCells([]);
           playWinSound();
-          if (updated.length === initialWords.length) {
+          if (updated.length === words.length) {
             playHeartSound();
           }
           return;
@@ -143,7 +163,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   };
 
   const handleShowHint = () => {
-    const unfound = initialWords.find((w) => !foundWords.includes(w.word));
+    const unfound = words.find((w) => !foundWords.includes(w.word));
     if (unfound) {
       setActiveHint(`Pista para "${unfound.word}": ${unfound.hint}`);
       playCutePop();
@@ -153,7 +173,8 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   };
 
   const handleReset = () => {
-    setFoundWords(['AMOR']);
+    setGameState(generateWordSearch(ROMANTIC_WORDS));
+    setFoundWords([]);
     setSelectedCells([]);
     setActiveHint(null);
     playCutePop();
@@ -175,12 +196,12 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
 
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="font-display-lg text-3xl sm:text-4xl text-white">
+          <div className="flex flex-col gap-1 text-white">
+            <h1 className="font-display-lg text-3xl sm:text-4xl">
               Sopa de Letras <span className="text-[#ff5470]">🔠</span>
             </h1>
             <p className="font-body-md text-xs sm:text-sm text-[#e2bec0] max-w-lg">
-              Busca palabras secretas en nuestros mensajes y recuerdos compartidos.
+              Busca palabras secretas románticas en nuestra cuadrícula. ¡Cada partida es diferente! 💖
             </p>
           </div>
 
@@ -201,20 +222,20 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                   />
                 </div>
               </div>
-              <div className="flex flex-col items-end">
+              <div className="flex flex-col items-end text-white">
                 <span className="font-label-caps text-[10px] text-[#ffb2b8] uppercase tracking-wider">
                   Palabras Encontradas
                 </span>
-                <span className="font-headline-lg text-2xl text-white">
+                <span className="font-headline-lg text-2xl">
                   {foundWords.length}
-                  <span className="text-[#e2bec0]/50 text-base">/{initialWords.length}</span>
+                  <span className="text-[#e2bec0]/50 text-base">/{words.length}</span>
                 </span>
               </div>
             </div>
             <div className="w-full h-2 bg-[#13062b] rounded-full overflow-hidden relative">
               <div
                 className="absolute left-0 top-0 h-full bg-[#7adaa1] transition-all duration-500"
-                style={{ width: `${(foundWords.length / initialWords.length) * 100}%` }}
+                style={{ width: `${words.length > 0 ? (foundWords.length / words.length) * 100 : 0}%` }}
               ></div>
             </div>
           </div>
@@ -232,7 +253,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
           {/* 10x10 Word Grid */}
           <div className="flex-1 flex flex-col items-center bg-[#25193d] p-4 sm:p-6 rounded-3xl shadow-xl border border-[#5a4042]/30">
             <div className="grid grid-cols-10 gap-1 sm:gap-2 bg-[#3a2e54]/50 p-2 sm:p-4 rounded-2xl select-none max-w-[500px] w-full">
-              {initialGrid.map((row, r) =>
+              {grid.map((row, r) =>
                 row.map((letter, c) => {
                   const isFound = isCellFound(r, c);
                   const isSelected = isCellSelected(r, c);
@@ -268,7 +289,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                 className="flex-1 bg-[#ff5470] text-white font-headline-md text-sm py-3 px-4 rounded-xl shadow-lg active:translate-y-0.5 transition-all flex items-center justify-center gap-1.5 font-bold"
               >
                 <span className="material-symbols-outlined text-base">refresh</span>
-                Reiniciar
+                Nuevo Juego
               </button>
               <button
                 onClick={handleShowHint}
@@ -281,10 +302,10 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
 
             <div className="flex-1 bg-[#2f2348] rounded-2xl p-5 shadow-xl border border-[#5a4042]/20 flex flex-col">
               <h3 className="font-label-mono text-xs text-[#fabc41] mb-4 uppercase tracking-widest border-b border-[#5a4042]/30 pb-2 font-bold">
-                Palabras a encontrar ({initialWords.length})
+                Palabras a encontrar ({words.length})
               </h3>
               <ul className="flex flex-col gap-2.5">
-                {initialWords.map((w) => {
+                {words.map((w) => {
                   const isFound = foundWords.includes(w.word);
                   return (
                     <li
@@ -318,7 +339,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                 })}
               </ul>
 
-              {foundWords.length === initialWords.length && (
+              {words.length > 0 && foundWords.length === words.length && (
                 <div className="mt-4 p-3 bg-[#7adaa1]/20 border border-[#7adaa1] rounded-xl text-center text-[#7adaa1] text-xs font-bold font-label-mono">
                   🎉 ¡Felicidades! Completaron la sopa de letras de amor.
                 </div>
