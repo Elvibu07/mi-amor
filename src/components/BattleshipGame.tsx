@@ -244,7 +244,11 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
     }
 
     const nextLogs = [newLog, ...logs];
-    const isGameOver = isHit && updatedShips.every(s => s.hits.length === s.size);
+    
+    // Bulletproof win check: sum of hits on all ships >= sum of ship sizes
+    const totalShipCells = opponentShips.reduce((acc, s) => acc + s.size, 0);
+    const totalHitCells = updatedShips.reduce((acc, s) => acc + s.hits.length, 0);
+    const isGameOver = isHit && totalHitCells >= totalShipCells && totalShipCells > 0;
 
     if (isGameOver) {
       playWinSound();
