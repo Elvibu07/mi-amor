@@ -830,11 +830,10 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                     onChange={(e) => setNewCouponColor(e.target.value as any)}
                     className="w-full bg-[#201439] text-white rounded-xl p-2.5 border border-[#5a4042]/30 text-xs font-bold"
                   >
-                    <option value="pink">💖 Rosa Romántico</option>
-                    <option value="amber">💛 Ámbar Dorado</option>
-                    <option value="emerald">💚 Esmeralda Menta</option>
-                    <option value="purple">💜 Púrpura Dulce</option>
-                    <option value="cyan">🩵 Cyan Brillante</option>
+                    <option value="pink">💖  Romántico</option>
+                    <option value="amber">💛 Relajante</option>
+                    <option value="purple">💜 Provocador</option>
+                    <option value="cyan">🩵 Divertido</option>
                   </select>
                 </div>
               </div>
