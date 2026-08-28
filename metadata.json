@@ -1,0 +1,6 @@
+{
+  "name": "Our Lobby",
+  "description": "Santuario digital privado para Sapo y Mi Rey: lobby compartido, reloj dual Guayaquil y Madrid, cuenta regresiva de reencuentro, Memory Vault, muro de notas y salón de minijuegos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
