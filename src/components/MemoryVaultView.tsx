@@ -7,6 +7,8 @@ import { storage } from '../lib/firebase';
 interface MemoryVaultViewProps {
   memories: MemoryItem[];
   onAddMemory: (memory: MemoryItem) => void;
+  onDeleteMemory: (id: string) => void;
+  onUpdateMemory: (id: string, update: Partial<MemoryItem>) => void;
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
 }
@@ -14,11 +16,30 @@ interface MemoryVaultViewProps {
 export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
   memories,
   onAddMemory,
+  onDeleteMemory,
+  onUpdateMemory,
   sapoProfile,
   miReyProfile,
 }) => {
   const [selectedMemory, setSelectedMemory] = useState<MemoryItem | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const handleDeleteClick = (id: string) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este recuerdo?')) {
+      onDeleteMemory(id);
+      setSelectedMemory(null);
+      playCutePop();
+    }
+  };
+
+  const handleToggleFeature = (id: string) => {
+    const mem = memories.find((m) => m.id === id);
+    if (mem) {
+      onUpdateMemory(id, { isFeatured: !mem.isFeatured });
+      setSelectedMemory((prev) => prev ? { ...prev, isFeatured: !mem.isFeatured } : null);
+      playCutePop();
+    }
+  };
 
   // New Memory Form state
   const [newQuote, setNewQuote] = useState('');
@@ -130,8 +151,11 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
 
                 {/* Top Meta */}
                 <div className="flex items-center justify-between mb-2 px-1">
-                  <span className="text-[11px] text-[#3a2e54] uppercase tracking-wider font-bold font-label-caps">
+                  <span className="text-[11px] text-[#3a2e54] uppercase tracking-wider font-bold font-label-caps flex items-center gap-1">
                     {mem.date}
+                    {mem.isFeatured && (
+                      <span className="material-symbols-outlined text-[14px] text-amber-500" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                    )}
                   </span>
                   <span className="text-[12px] text-[#3a2e54] flex items-center gap-1 font-label-mono font-medium">
                     <span className="material-symbols-outlined text-[16px] text-[#43a470]">location_on</span>
@@ -227,10 +251,28 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
             <p className="font-headline-md text-lg italic text-[#25193d] mb-4">
               "{selectedMemory.quote}"
             </p>
-            <div className="flex items-center justify-between pt-3 border-t border-stone-300">
-              <span className="text-xs font-label-caps uppercase text-stone-500">
-                Fotografía para nuestro santuario privado
-              </span>
+            <div className="flex items-center justify-between pt-3 border-t border-stone-300 flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDeleteClick(selectedMemory.id)}
+                  className="flex items-center gap-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-red-200 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                  Eliminar
+                </button>
+                <button
+                  onClick={() => handleToggleFeature(selectedMemory.id)}
+                  className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                    selectedMemory.isFeatured
+                      ? 'bg-amber-100 border-amber-200 text-amber-700 shadow-sm font-bold'
+                      : 'bg-stone-100 border-stone-200 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: selectedMemory.isFeatured ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                  {selectedMemory.isFeatured ? 'Destacado ⭐' : 'Destacar'}
+                </button>
+              </div>
+
               <span className="text-xs font-bold font-label-mono bg-rose-100 text-rose-800 px-3 py-1 rounded-full">
                 {selectedMemory.capturedBy === 'Together'
                   ? 'Ambos'

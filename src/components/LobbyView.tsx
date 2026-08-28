@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ViewType, UserProfile } from '../types';
+import { ViewType, UserProfile, MemoryItem } from '../types';
 import { playHeartSound } from '../utils/audio';
 import { MusicPlayer } from './MusicPlayer';
 
@@ -12,6 +12,7 @@ interface LobbyViewProps {
   daysToReunion: number;
   onSendLove: () => void;
   currentUser: 'Sapo' | 'Mi Rey';
+  memories: MemoryItem[];
 }
 
 export const LobbyView: React.FC<LobbyViewProps> = ({
@@ -23,6 +24,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   daysToReunion,
   onSendLove,
   currentUser,
+  memories,
 }) => {
   // ── Dynamic timezone difference ───────────────────────────────────────────
   const timeDiffLabel = useMemo(() => {
@@ -49,6 +51,15 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
       return '± horas';
     }
   }, [sapoProfile.timezone, miReyProfile.timezone, gyeTime]); // gyeTime ticks every second
+
+  const featuredMemory = useMemo(() => {
+    if (!memories || memories.length === 0) return null;
+    const featured = [...memories]
+      .filter((m) => m.isFeatured)
+      .sort((a, b) => b.id.localeCompare(a.id))[0];
+    if (featured) return featured;
+    return [...memories].sort((a, b) => b.id.localeCompare(a.id))[0];
+  }, [memories]);
 
   return (
     <main className="flex-1 p-4 md:p-8 flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto w-full">
@@ -125,28 +136,72 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             onClick={() => onNavigate('memory-vault')}
             className="bg-[#2E2247] rounded-[2rem] p-6 shadow-xl flex-1 relative overflow-hidden group border border-[#5a4042]/20 min-h-[300px] flex flex-col justify-between cursor-pointer"
           >
-            {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#3a2e54] via-[#2E2247] to-[#1a0e3a]"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#180c30]/95 via-[#180c30]/50 to-transparent"></div>
+            {featuredMemory ? (
+              <>
+                {/* Background image of the memory */}
+                <div 
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                  style={{ backgroundImage: `url(${featuredMemory.imageUrl})` }}
+                ></div>
+                {/* Overlay to keep text readable */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#180c30]/95 via-[#180c30]/40 to-[#180c30]/30"></div>
 
-            {/* Top badge */}
-            <div className="relative z-10 flex items-center justify-between">
-              <div className="bg-[#221934]/80 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center gap-2 border border-[#5a4042]/30">
-                <span className="material-symbols-outlined text-[#ffb2b8] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
-                <span className="font-headline-md text-xs sm:text-sm text-white font-bold">Últimos Recuerdos</span>
-              </div>
-              <span className="text-xs text-[#ffb2b8] font-label-mono bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">
-                Ver todos →
-              </span>
-            </div>
+                {/* Top badge */}
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="bg-[#221934]/80 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center gap-2 border border-[#5a4042]/30">
+                    <span className="material-symbols-outlined text-[#ffb2b8] text-sm animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+                    <span className="font-headline-md text-xs sm:text-sm text-white font-bold">
+                      {featuredMemory.isFeatured ? 'Recuerdo Destacado ⭐' : 'Último Recuerdo'}
+                    </span>
+                  </div>
+                  <span className="text-xs text-[#ffb2b8] font-label-mono bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">
+                    Ver todos →
+                  </span>
+                </div>
 
-            {/* Bottom — empty state prompt */}
-            <div className="relative z-10 mt-auto pt-16 flex flex-col items-center text-center">
-              <span className="material-symbols-outlined text-4xl text-[#e2bec0]/30 mb-3">add_photo_alternate</span>
-              <p className="font-body-lg text-[#e2bec0]/60 font-medium text-base sm:text-lg leading-relaxed">
-                Aún no hay recuerdos. ¡Sube su primera foto juntos! 📸
-              </p>
-            </div>
+                {/* Polaroid text content */}
+                <div className="relative z-10 mt-auto flex flex-col gap-2 bg-[#221934]/70 backdrop-blur-md p-4 rounded-2xl border border-white/5 text-left">
+                  <p className="font-headline-md italic text-white text-sm sm:text-base leading-relaxed">
+                    "{featuredMemory.quote}"
+                  </p>
+                  <div className="flex justify-between items-center text-[10px] text-[#e2bec0] font-label-mono mt-1">
+                    <span>{featuredMemory.date} • {featuredMemory.location}</span>
+                    <span className="bg-[#ff5470]/20 text-[#ffb2b8] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                      {featuredMemory.capturedBy === 'Together' 
+                        ? 'Ambos' 
+                        : featuredMemory.capturedBy === 'Sapo' 
+                        ? sapoProfile.name 
+                        : miReyProfile.name}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Background gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#3a2e54] via-[#2E2247] to-[#1a0e3a]"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#180c30]/95 via-[#180c30]/50 to-transparent"></div>
+
+                {/* Top badge */}
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="bg-[#221934]/80 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center gap-2 border border-[#5a4042]/30">
+                    <span className="material-symbols-outlined text-[#ffb2b8] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+                    <span className="font-headline-md text-xs sm:text-sm text-white font-bold">Últimos Recuerdos</span>
+                  </div>
+                  <span className="text-xs text-[#ffb2b8] font-label-mono bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">
+                    Ver todos →
+                  </span>
+                </div>
+
+                {/* Bottom — empty state prompt */}
+                <div className="relative z-10 mt-auto pt-16 flex flex-col items-center text-center">
+                  <span className="material-symbols-outlined text-4xl text-[#e2bec0]/30 mb-3">add_photo_alternate</span>
+                  <p className="font-body-lg text-[#e2bec0]/60 font-medium text-base sm:text-lg leading-relaxed">
+                    Aún no hay recuerdos. ¡Sube su primera foto juntos! 📸
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Action Buttons Row */}

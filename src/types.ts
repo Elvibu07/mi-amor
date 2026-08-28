@@ -37,6 +37,7 @@ export interface MemoryItem {
   rotation?: string;
   isWide?: boolean;
   album?: 'recuerdos' | 'cumpleanos' | 'juntos' | 'lugares' | 'nosotros';
+  isFeatured?: boolean;
 }
 
 export interface NoteItem {

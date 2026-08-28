@@ -58,7 +58,7 @@ export default function App() {
   const [miReyProfile, setMiReyProfile] = useSyncedDoc<UserProfile>('shared', 'mirey_profile', 'ourlobby_profile_mirey', initialProfiles.miRey);
 
   // ── Memories ───────────────────────────────────────────────────────────────
-  const [memories, addMemory] = useSyncedCollection<MemoryItem>('memories', 'ourlobby_memories', initialMemories);
+  const [memories, addMemory, updateMemory, deleteMemory] = useSyncedCollection<MemoryItem>('memories', 'ourlobby_memories', initialMemories);
 
   // ── Notes ──────────────────────────────────────────────────────────────────
   const [notes, addNote, updateNote] = useSyncedCollection<NoteItem>('notes', 'ourlobby_notes', initialNotes);
@@ -241,6 +241,7 @@ export default function App() {
             daysToReunion={daysToReunion}
             onSendLove={handleSendLove}
             currentUser={currentUser}
+            memories={memories}
           />
         </div>
 
@@ -248,6 +249,8 @@ export default function App() {
           <MemoryVaultView
             memories={memories}
             onAddMemory={handleAddMemory}
+            onDeleteMemory={deleteMemory}
+            onUpdateMemory={updateMemory}
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
           />
