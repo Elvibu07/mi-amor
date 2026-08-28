@@ -235,9 +235,12 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
       attacker: currentUser,
       coord: coordName,
       result: isHit ? (isSunk ? 'sunk' : 'hit') : 'miss',
-      shipName: isSunk ? hitShip!.name : undefined,
       timeStr: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
     };
+
+    if (isSunk && hitShip) {
+      newLog.shipName = (hitShip as PlacedShip).name;
+    }
 
     const nextLogs = [newLog, ...logs];
     const isGameOver = isHit && updatedShips.every(s => s.hits.length === s.size);
