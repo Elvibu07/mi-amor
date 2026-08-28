@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ViewType, UserProfile, MemoryItem } from '../types';
 import { playHeartSound } from '../utils/audio';
 import { MusicPlayer } from './MusicPlayer';
@@ -52,14 +52,35 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
     }
   }, [sapoProfile.timezone, miReyProfile.timezone, gyeTime]); // gyeTime ticks every second
 
-  const featuredMemory = useMemo(() => {
-    if (!memories || memories.length === 0) return null;
-    const featured = [...memories]
-      .filter((m) => m.isFeatured)
-      .sort((a, b) => b.id.localeCompare(a.id))[0];
-    if (featured) return featured;
-    return [...memories].sort((a, b) => b.id.localeCompare(a.id))[0];
+  // Slideshow memories list
+  const displayMemories = useMemo(() => {
+    if (!memories || memories.length === 0) return [];
+    const featured = memories.filter((m) => m.isFeatured);
+    if (featured.length > 0) {
+      return [...featured].sort((a, b) => b.id.localeCompare(a.id));
+    }
+    return [...memories].sort((a, b) => b.id.localeCompare(a.id));
   }, [memories]);
+
+  const [currentMemoryIndex, setCurrentMemoryIndex] = useState(0);
+
+  // Rotate images every 8 seconds
+  useEffect(() => {
+    if (displayMemories.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentMemoryIndex((prev) => (prev + 1) % displayMemories.length);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [displayMemories.length]);
+
+  // Reset index if the memory list changes or shrinks
+  useEffect(() => {
+    setCurrentMemoryIndex(0);
+  }, [displayMemories.length]);
+
+  const activeMemory = displayMemories[currentMemoryIndex] || null;
 
   return (
     <main className="flex-1 p-4 md:p-8 flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto w-full">
@@ -148,12 +169,13 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             onClick={() => onNavigate('memory-vault')}
             className="bg-[#2E2247] rounded-[2rem] p-6 shadow-xl flex-1 relative overflow-hidden group border border-[#5a4042]/20 min-h-[300px] flex flex-col justify-between cursor-pointer"
           >
-            {featuredMemory ? (
+            {activeMemory ? (
               <>
                 {/* Background image of the memory */}
                 <div 
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${featuredMemory.imageUrl})` }}
+                  key={activeMemory.id}
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-[800ms] group-hover:scale-105 animate-fade-in"
+                  style={{ backgroundImage: `url(${activeMemory.imageUrl})` }}
                 ></div>
                 {/* Overlay to keep text readable */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#180c30]/95 via-[#180c30]/40 to-[#180c30]/30"></div>
@@ -163,7 +185,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                   <div className="bg-[#221934]/80 backdrop-blur-md px-4 py-1.5 rounded-full flex items-center gap-2 border border-[#5a4042]/30">
                     <span className="material-symbols-outlined text-[#ffb2b8] text-sm animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
                     <span className="font-headline-md text-xs sm:text-sm text-white font-bold">
-                      {featuredMemory.isFeatured ? 'Recuerdo Destacado ⭐' : 'Último Recuerdo'}
+                      {activeMemory.isFeatured ? 'Recuerdo Destacado ⭐' : 'Último Recuerdo'}
                     </span>
                   </div>
                   <span className="text-xs text-[#ffb2b8] font-label-mono bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">
@@ -172,16 +194,16 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                 </div>
 
                 {/* Polaroid text content */}
-                <div className="relative z-10 mt-auto flex flex-col gap-2 bg-[#221934]/70 backdrop-blur-md p-4 rounded-2xl border border-white/5 text-left">
+                <div className="relative z-10 mt-auto flex flex-col gap-2 bg-[#221934]/70 backdrop-blur-md p-4 rounded-2xl border border-white/5 text-left animate-fade-in" key={`desc-${activeMemory.id}`}>
                   <p className="font-headline-md italic text-white text-sm sm:text-base leading-relaxed">
-                    "{featuredMemory.quote}"
+                    "{activeMemory.quote}"
                   </p>
                   <div className="flex justify-between items-center text-[10px] text-[#e2bec0] font-label-mono mt-1">
-                    <span>{featuredMemory.date} • {featuredMemory.location}</span>
+                    <span>{activeMemory.date} • {activeMemory.location}</span>
                     <span className="bg-[#ff5470]/20 text-[#ffb2b8] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
-                      {featuredMemory.capturedBy === 'Together' 
+                      {activeMemory.capturedBy === 'Together' 
                         ? 'Ambos' 
-                        : featuredMemory.capturedBy === 'Sapo' 
+                        : activeMemory.capturedBy === 'Sapo' 
                         ? sapoProfile.name 
                         : miReyProfile.name}
                     </span>
