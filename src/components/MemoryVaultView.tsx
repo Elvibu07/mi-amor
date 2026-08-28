@@ -403,9 +403,17 @@ service firebase.storage {
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full bg-[#ff5470] hover:bg-[#ff6b84] text-white py-3.5 rounded-2xl font-headline-md text-base font-bold shadow-xl active:scale-95 transition-all"
+                  disabled={uploading || !newImageUrl.trim()}
+                  className={`w-full py-3.5 rounded-2xl font-headline-md text-base font-bold shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 ${
+                    uploading || !newImageUrl.trim()
+                      ? 'bg-[#201439] text-[#e2bec0]/40 border border-[#5a4042]/20 cursor-not-allowed'
+                      : 'bg-[#ff5470] hover:bg-[#ff6b84] text-white'
+                  }`}
                 >
-                  Guardar en Memory Vault ✨
+                  {uploading && (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  )}
+                  {uploading ? 'Subiendo Foto...' : 'Guardar en Memory Vault ✨'}
                 </button>
               </div>
             </form>
