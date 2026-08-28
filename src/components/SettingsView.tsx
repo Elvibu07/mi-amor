@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { playCutePop } from '../utils/audio';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../lib/firebase';
 
 interface SettingsViewProps {
   currentUser: 'Sapo' | 'Mi Rey';
@@ -78,6 +80,38 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor
   const [showLocationPresets, setShowLocationPresets] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [isTraveling, setIsTraveling] = useState(false);
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+
+    if (storage) {
+      try {
+        const fileRef = ref(storage, `avatars/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        setAvatar(url);
+      } catch (err: any) {
+        console.error(err);
+        setUploadError('Error al subir avatar a Firebase.');
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(reader.result as string);
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handlePreset = (preset: typeof LOCATION_PRESETS[0]) => {
     setCity(preset.city);
@@ -204,14 +238,37 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="font-label-caps text-[10px] text-[#e2bec0]/60 uppercase tracking-wider">URL del Avatar</label>
-          <input
-            type="url"
-            value={avatar}
-            onChange={(e) => setAvatar(e.target.value)}
-            className="bg-[#2f2348] rounded-xl px-4 py-2.5 text-white w-full outline-none font-label-mono text-xs border border-[#5a4042]/30"
-            placeholder="https://..."
-          />
+          <label className="font-label-caps text-[10px] text-[#e2bec0]/60 uppercase tracking-wider">Foto de Perfil (Avatar)</label>
+          <div className="flex flex-col gap-2 bg-[#201439] border border-[#5a4042]/40 rounded-xl p-3">
+            <div className="flex items-center gap-3">
+              <label className="flex-1 bg-[#ff5470] hover:bg-[#ff6b84] text-white text-xs font-bold py-2 px-3 rounded-lg text-center cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md">
+                <span className="material-symbols-outlined text-sm">cloud_upload</span>
+                {uploading ? 'Subiendo...' : 'Seleccionar Foto'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarFileChange}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-[10px] text-[#e2bec0]/60">O pega una URL</span>
+            </div>
+
+            {uploadError && (
+              <span className="text-[9px] text-[#ff5470] font-label-mono bg-[#ff5470]/10 p-2 rounded-lg border border-[#ff5470]/20 mt-1">
+                ⚠️ {uploadError}
+              </span>
+            )}
+
+            <input
+              type="url"
+              value={avatar}
+              onChange={(e) => setAvatar(e.target.value)}
+              className="bg-black/30 rounded-lg px-3 py-1.5 text-white w-full outline-none font-label-mono text-[10px] border border-[#5a4042]/20 mt-1"
+              placeholder="Pega la URL del avatar..."
+            />
+          </div>
         </div>
       </div>
 
