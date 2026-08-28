@@ -222,7 +222,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
       if (ship.cells.includes(index)) {
         hitShip = ship;
         const newHits = [...ship.hits, index];
-        if (newHits.length === ship.size) isSunk = true;
+        if (newHits.length === ship.cells.length) isSunk = true;
         return { ...ship, hits: newHits };
       }
       return ship;
@@ -246,7 +246,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
     const nextLogs = [newLog, ...logs];
     
     // Bulletproof win check: sum of hits on all ships >= sum of ship sizes
-    const totalShipCells = opponentShips.reduce((acc, s) => acc + s.size, 0);
+    const totalShipCells = opponentShips.reduce((acc, s) => acc + s.cells.length, 0);
     const totalHitCells = updatedShips.reduce((acc, s) => acc + s.hits.length, 0);
     const isGameOver = isHit && totalHitCells >= totalShipCells && totalShipCells > 0;
 
@@ -568,7 +568,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
                     const state = opponentBoard[i];
                     // Find if Sapo has hit Mi Rey's ships in this cell, and if it's sunk
                     const opponentShipHit = opponentShips.find(s => s.cells.includes(i));
-                    const isSunk = opponentShipHit && opponentShipHit.hits.length === opponentShipHit.size;
+                    const isSunk = opponentShipHit && opponentShipHit.hits.length === opponentShipHit.cells.length;
                     const isMyTurn = currentTurn === currentUser && phase === 'playing';
 
                     return (
