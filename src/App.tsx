@@ -369,7 +369,7 @@ export default function App() {
             <span className="font-headline-md tracking-tight text-white">{sapoProfile.name} & {miReyProfile.name}</span>
           </div>
           <p className="font-body-md text-xs text-[#e2bec0]/70 text-center">
-            Tu santuario privado desde 2024 • Guayaquil ⇄ Madrid
+            Tu santuario privado desde 2024
           </p>
           <div className="flex items-center gap-4 text-xs font-label-caps uppercase text-[#e2bec0]">
             <button onClick={() => navigate('memory-vault')} className="hover:text-[#ffb2b8] transition-colors">Vault</button>

@@ -286,7 +286,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
               <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex flex-col">
                   <h2 className="font-headline-md text-xl text-[#fabc41] font-bold">
-                    Muro de Amor • Guayaquil ⇄ Madrid
+                    Muro de Amor
                   </h2>
                   <p className="text-xs text-[#e2bec0] mt-0.5">
                     Nuestras palabras y promesas favoritas para leer cada día.

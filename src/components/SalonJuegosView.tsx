@@ -25,7 +25,7 @@ export const SalonJuegosView: React.FC<SalonJuegosViewProps> = ({
           <div className="inline-flex items-center justify-center bg-[#25193d]/80 px-5 py-2 rounded-full backdrop-blur-sm relative z-10 border border-[#5a4042]/30 shadow-inner">
             <span className="font-label-mono text-xs md:text-sm text-[#fabc41] uppercase tracking-widest flex items-center gap-2 font-bold">
               <span className="material-symbols-outlined text-[18px]">sports_esports</span>
-              Guayaquil ⇄ Madrid
+              Arena de Juegos
             </span>
           </div>
 
