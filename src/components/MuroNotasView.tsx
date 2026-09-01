@@ -7,6 +7,7 @@ interface MuroNotasViewProps {
   notes: NoteItem[];
   onAddNote: (note: NoteItem) => void;
   onToggleFavorite: (id: string) => void;
+  onDeleteNote?: (id: string) => void;
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
   daysToReunion: number;
@@ -17,6 +18,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
   notes,
   onAddNote,
   onToggleFavorite,
+  onDeleteNote,
   sapoProfile,
   miReyProfile,
   daysToReunion,
@@ -456,21 +458,36 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        onToggleFavorite(note.id);
-                        playHeartSound();
-                      }}
-                      className="text-[#ff5470] hover:scale-125 transition-transform p-1.5 rounded-full hover:bg-white/5"
-                      title="Dar amor"
-                    >
-                      <span
-                        className="material-symbols-outlined text-[22px]"
-                        style={{ fontVariationSettings: note.isFavorite ? "'FILL' 1" : "'FILL' 0" }}
+                    <div className="flex items-center gap-1">
+                      {onDeleteNote && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm('¿Seguro que deseas eliminar esta nota?')) {
+                              onDeleteNote(note.id);
+                            }
+                          }}
+                          className="text-[#e2bec0]/50 hover:text-[#ff5470] hover:scale-110 transition-all p-1.5 rounded-full hover:bg-white/5"
+                          title="Eliminar"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          onToggleFavorite(note.id);
+                          playHeartSound();
+                        }}
+                        className="text-[#ff5470] hover:scale-125 transition-transform p-1.5 rounded-full hover:bg-white/5"
+                        title="Dar amor"
                       >
-                        favorite
-                      </span>
-                    </button>
+                        <span
+                          className="material-symbols-outlined text-[22px]"
+                          style={{ fontVariationSettings: note.isFavorite ? "'FILL' 1" : "'FILL' 0" }}
+                        >
+                          favorite
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

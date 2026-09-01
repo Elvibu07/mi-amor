@@ -61,7 +61,7 @@ export default function App() {
   const [memories, addMemory, updateMemory, deleteMemory] = useSyncedCollection<MemoryItem>('memories', 'ourlobby_memories', initialMemories);
 
   // ── Notes ──────────────────────────────────────────────────────────────────
-  const [notes, addNote, updateNote] = useSyncedCollection<NoteItem>('notes', 'ourlobby_notes', initialNotes);
+  const [notes, addNote, updateNote, removeNote] = useSyncedCollection<NoteItem>('notes', 'ourlobby_notes', initialNotes);
 
   // ── Goals ──────────────────────────────────────────────────────────────────
   const [goals, addGoal, updateGoal] = useSyncedCollection<GoalItem>('goals', 'ourlobby_goals', initialGoals);
@@ -306,6 +306,7 @@ export default function App() {
             notes={notes}
             onAddNote={handleAddNote}
             onToggleFavorite={handleToggleFavoriteNote}
+            onDeleteNote={removeNote}
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
             daysToReunion={daysToReunion}
