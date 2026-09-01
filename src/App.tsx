@@ -452,6 +452,7 @@ export default function App() {
                   </h2>
                 </div>
               </div>
+            </div>
           </div>
         )}
       </div>
