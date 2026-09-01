@@ -7,7 +7,7 @@ export const initialProfiles: { sapo: UserProfile; miRey: UserProfile } = {
     city: 'Guayaquil',
     country: 'Ecuador',
     timezone: 'America/Guayaquil',
-    statusPhrase: 'Esperando en el lobby... 🐸💚',
+    statusPhrase: 'Esperando en el lobby... 💚',
     pushAlerts: true,
     soundEffects: false,
   },

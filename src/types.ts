@@ -68,7 +68,7 @@ export interface GoalItem {
   id: string;
   title: string;
   description?: string;
-  category: 'distancia' | 'reencuentro' | 'madrid' | 'guayaquil' | 'futuro';
+  category: 'distancia' | 'reencuentro' | 'argentina' | 'guayaquil' | 'futuro';
   author: 'Sapo' | 'Mi Rey' | 'Juntos';
   isCompleted: boolean;
   completedAt?: string;

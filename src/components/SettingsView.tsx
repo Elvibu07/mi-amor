@@ -25,7 +25,7 @@ const TIMEZONES = [
   { label: '🇺🇸 Nueva York (UTC−5/−4)', value: 'America/New_York' },
   { label: '🇺🇸 Los Ángeles (UTC−8/−7)', value: 'America/Los_Angeles' },
   { label: '🇬🇧 Londres (UTC+0/+1)', value: 'Europe/London' },
-  { label: '🇪🇸 Madrid (UTC+1/+2)', value: 'Europe/Madrid' },
+  { label: '🇦🇷 Argentina (UTC+1/+2)', value: 'America/Argentina/Buenos_Aires' },
   { label: '🇫🇷 París (UTC+1/+2)', value: 'Europe/Paris' },
   { label: '🇩🇪 Berlín (UTC+1/+2)', value: 'Europe/Berlin' },
   { label: '🇮🇹 Roma (UTC+1/+2)', value: 'Europe/Rome' },
@@ -39,7 +39,7 @@ const TIMEZONES = [
 // Quick-pick preset locations
 const LOCATION_PRESETS = [
   { city: 'Guayaquil', country: 'Ecuador', timezone: 'America/Guayaquil', flag: '🇪🇨' },
-  { city: 'Madrid', country: 'España', timezone: 'Europe/Madrid', flag: '🇪🇸' },
+  { city: 'Argentina', country: 'Argentina', timezone: 'America/Argentina/Buenos_Aires', flag: '🇦🇷' },
   { city: 'Ciudad de México', country: 'México', timezone: 'America/Mexico_City', flag: '🇲🇽' },
   { city: 'Bogotá', country: 'Colombia', timezone: 'America/Bogota', flag: '🇨🇴' },
   { city: 'Buenos Aires', country: 'Argentina', timezone: 'America/Argentina/Buenos_Aires', flag: '🇦🇷' },
@@ -54,14 +54,14 @@ const LOCATION_PRESETS = [
 
 interface ProfileEditorProps {
   label: string;
-  emoji: string;
+  emoji?: string;
   accentColor: string;
   profile: UserProfile;
   otherProfilePin: string;
   onSave: (updated: UserProfile) => void;
 }
 
-const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor, profile, otherProfilePin, onSave }) => {
+const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji = '', accentColor, profile, otherProfilePin, onSave }) => {
   const [name, setName] = useState(profile.name);
   const [status, setStatus] = useState(profile.statusPhrase);
   const [avatar, setAvatar] = useState(profile.avatar);
@@ -71,7 +71,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor
     // Map legacy UTC string to IANA timezone
     profile.timezone?.startsWith('America/') || profile.timezone?.startsWith('Europe/') || profile.timezone?.startsWith('Asia/')
       ? profile.timezone
-      : profile.city === 'Guayaquil' ? 'America/Guayaquil' : 'Europe/Madrid'
+      : profile.city === 'Guayaquil' ? 'America/Guayaquil' : 'America/Argentina/Buenos_Aires'
   );
   const [push, setPush] = useState(profile.pushAlerts);
   const [sound, setSound] = useState(profile.soundEffects);
@@ -479,8 +479,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="w-full max-w-2xl mx-auto">
           {currentUser === 'Sapo' ? (
             <ProfileEditor
-              label="Sapo"
-              emoji="🐸"
+              label={sapoProfile.name}
+              
               accentColor="#7adaa1"
               profile={sapoProfile}
               otherProfilePin={miReyProfile.pin || '0000'}
@@ -488,8 +488,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             />
           ) : (
             <ProfileEditor
-              label="Mi Rey"
-              emoji="👑"
+              label={miReyProfile.name}
+              emoji=""
               accentColor="#fabc41"
               profile={miReyProfile}
               otherProfilePin={sapoProfile.pin || '1111'}

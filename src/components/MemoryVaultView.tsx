@@ -89,7 +89,7 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
     const newMem: MemoryItem = {
       id: 'mem-' + Date.now(),
       quote: newQuote.trim(),
-      location: newLocation || 'Guayaquil ⇄ Madrid',
+      location: newLocation || 'Guayaquil ⇄ Argentina',
       date: newDate || 'Hoy',
       imageUrl: newImageUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrXJhdnTDkGXibcRSmS19OuEZvTma5vzF05UtT0TrAd9PwKf1c3fBpvP1tdOLtdzS-BN8YCTiwyOv1MY02EBNvtSGR8xJFdU_wolnNUALZZBDSj3Oea9An2oCjf1A-8OBmFueyU169Nw7yoQx6tUBmDhXpCFREU6dbUdAplOvzTgmslPwIjNNdKMOvlt6pTv7wZ_gfumpj573bTJ97sAafYEvFJzdLfoBs3XT4sLaTnPKt1Ele1s5a',
       capturedBy: newCapturedBy,
@@ -323,7 +323,7 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
                     type="text"
                     value={newLocation}
                     onChange={(e) => setNewLocation(e.target.value)}
-                    placeholder="Guayaquil / Madrid"
+                    placeholder="Guayaquil / Argentina"
                     className="w-full bg-[#201439] border border-[#5a4042]/40 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5470]"
                   />
                 </div>
@@ -419,7 +419,7 @@ service firebase.storage {
                         : 'border-[#5a4042]/40 text-[#e2bec0]'
                     }`}
                   >
-                    {sapoProfile.name} 🐸
+                    {sapoProfile.name} 
                   </button>
                   <button
                     type="button"
@@ -430,7 +430,7 @@ service firebase.storage {
                         : 'border-[#5a4042]/40 text-[#e2bec0]'
                     }`}
                   >
-                    {miReyProfile.name} 👑
+                    {miReyProfile.name} 
                   </button>
                   <button
                     type="button"

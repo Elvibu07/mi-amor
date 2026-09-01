@@ -10,7 +10,7 @@ interface FechasEspecialesViewProps {
   reunionDate?: string;          // ISO date string e.g. '2026-11-15'
   onUpdateReunionDate?: (iso: string) => void;
   gyeTime: string;
-  madTime: string;
+  argTime: string;
 }
 
 // ── Hardcoded special dates ───────────────────────────────────────────────────
@@ -54,10 +54,11 @@ interface CounterCardProps {
   bg: string;
   isToday?: boolean;
   big?: boolean;
+  avatar?: string;
 }
 
 const CounterCard: React.FC<CounterCardProps> = ({
-  icon, emoji, title, subtitle, valueLabel, value, accent, bg, isToday: today, big
+  icon, emoji, title, subtitle, valueLabel, value, accent, bg, isToday: today, big, avatar
 }) => (
   <div
     className={`relative rounded-[2rem] p-6 border overflow-hidden flex flex-col gap-3 transition-all hover:scale-[1.02] ${
@@ -78,12 +79,21 @@ const CounterCard: React.FC<CounterCardProps> = ({
 
     <div className="flex items-start justify-between relative z-10">
       <div className="flex items-center gap-2">
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
-          style={{ background: `${accent}20`, border: `1px solid ${accent}40` }}
-        >
-          {emoji}
-        </div>
+        {avatar ? (
+          <img
+            src={avatar}
+            alt="Profile"
+            className="w-10 h-10 rounded-full object-cover"
+            style={{ border: `2px solid ${accent}40`, background: `${accent}20` }}
+          />
+        ) : (
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
+            style={{ background: `${accent}20`, border: `1px solid ${accent}40` }}
+          >
+            {emoji}
+          </div>
+        )}
         <div>
           <p className="font-headline-md text-white font-bold text-sm leading-tight">{title}</p>
           <p className="font-label-mono text-[10px] uppercase tracking-wider" style={{ color: `${accent}cc` }}>
@@ -130,7 +140,7 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
   reunionDate,
   onUpdateReunionDate,
   gyeTime,
-  madTime,
+  argTime,
 }) => {
   const now = useMemo(() => new Date(), []);
 
@@ -255,8 +265,9 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
         {/* Sapo birthday */}
         <CounterCard
           icon="cake"
-          emoji="🐸"
-          title={`Cumple de ${sapoProfile.name}`}
+          emoji="🎂"
+          avatar={sapoProfile.avatar}
+          title={`Cumple de ${sapoProfile.name} ❤️`}
           subtitle={`${sapoDate} • ${sapoAge + 1} añitos`}
           valueLabel={isToday(nextSapoBday) ? '¡Feliz cumple! 🎉' : 'días restantes'}
           value={isToday(nextSapoBday) ? '🎂' : daysToSapoBday}
@@ -268,8 +279,9 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
         {/* Mi Rey birthday */}
         <CounterCard
           icon="cake"
-          emoji="👑"
-          title={`Cumple de ${miReyProfile.name}`}
+          emoji="🎂"
+          avatar={miReyProfile.avatar}
+          title={`Cumple de ${miReyProfile.name} ❤️`}
           subtitle={`${miReyDate} • ${miReyAge + 1} añitos`}
           valueLabel={isToday(nextMiReyBday) ? '¡Feliz cumple! 🎉' : 'días restantes'}
           value={isToday(nextMiReyBday) ? '🎂' : daysToMiReyBday}
@@ -329,8 +341,8 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
       {/* Dual clocks mini */}
       <div className="mt-4 grid grid-cols-2 gap-4">
         {[
-          { label: `${sapoProfile.city} ${sapoProfile.country === 'Ecuador' ? '🇪🇨' : sapoProfile.country === 'España' ? '🇪🇸' : '🌍'}`, time: gyeTime, name: sapoProfile.name, accent: '#7adaa1', avatar: sapoProfile.avatar },
-          { label: `${miReyProfile.city} ${miReyProfile.country === 'España' ? '🇪🇸' : miReyProfile.country === 'Ecuador' ? '🇪🇨' : '🌍'}`, time: madTime, name: miReyProfile.name, accent: '#fabc41', avatar: miReyProfile.avatar },
+          { label: `${sapoProfile.city} ${sapoProfile.country === 'Ecuador' ? '🇪🇨' : sapoProfile.country === 'Argentina' ? '🇦🇷' : '🌍'}`, time: gyeTime, name: sapoProfile.name, accent: '#7adaa1', avatar: sapoProfile.avatar },
+          { label: `${miReyProfile.city} ${miReyProfile.country === 'Argentina' ? '🇦🇷' : miReyProfile.country === 'Ecuador' ? '🇪🇨' : '🌍'}`, time: argTime, name: miReyProfile.name, accent: '#fabc41', avatar: miReyProfile.avatar },
         ].map((c) => (
           <div key={c.name} className="bg-[#2E2247] rounded-2xl p-4 border border-[#5a4042]/20 flex items-center gap-3">
             <img src={c.avatar} alt={c.name} className="w-10 h-10 rounded-full object-cover" style={{ border: `2px solid ${c.accent}50` }} />

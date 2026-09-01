@@ -8,7 +8,7 @@ interface CountdownViewProps {
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
   gyeTime: string;
-  madTime: string;
+  argTime: string;
 }
 
 export const CountdownView: React.FC<CountdownViewProps> = ({
@@ -17,7 +17,7 @@ export const CountdownView: React.FC<CountdownViewProps> = ({
   sapoProfile,
   miReyProfile,
   gyeTime,
-  madTime,
+  argTime,
 }) => {
   const [seconds, setSeconds] = useState(45);
   const [minutes, setMinutes] = useState(30);
@@ -80,7 +80,7 @@ export const CountdownView: React.FC<CountdownViewProps> = ({
               Próximo Reencuentro
             </h1>
             <span className="block font-headline-md text-base sm:text-xl text-[#e2bec0] font-normal">
-              Guayaquil <span className="text-[#fabc41] mx-2 font-bold">⇄</span> Madrid
+              Guayaquil <span className="text-[#fabc41] mx-2 font-bold">⇄</span> Argentina
             </span>
           </div>
 
@@ -193,9 +193,9 @@ export const CountdownView: React.FC<CountdownViewProps> = ({
             </div>
             <div>
               <div className="font-label-caps text-[10px] text-[#fabc41] uppercase tracking-wider">
-                Llegada • {madTime}
+                Llegada • {argTime}
               </div>
-              <div className="font-headline-md text-base text-white">MAD (Madrid, ES)</div>
+              <div className="font-headline-md text-base text-white">ARG (Argentina, ES)</div>
             </div>
           </div>
         </div>

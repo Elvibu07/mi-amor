@@ -8,7 +8,7 @@ interface LobbyViewProps {
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
   gyeTime: string;
-  madTime: string;
+  argTime: string;
   daysToReunion: number;
   onSendLove: () => void;
   currentUser: 'Sapo' | 'Mi Rey';
@@ -20,7 +20,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   sapoProfile,
   miReyProfile,
   gyeTime,
-  madTime,
+  argTime,
   daysToReunion,
   onSendLove,
   currentUser,
@@ -32,7 +32,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
       const now = new Date();
       // Get the UTC offset for each timezone by comparing local midnight
       const sapoTz = sapoProfile.timezone?.includes('/') ? sapoProfile.timezone : 'America/Guayaquil';
-      const miReyTz = miReyProfile.timezone?.includes('/') ? miReyProfile.timezone : 'Europe/Madrid';
+      const miReyTz = miReyProfile.timezone?.includes('/') ? miReyProfile.timezone : 'America/Argentina/Buenos_Aires';
 
       // Get hours for each timezone
       const sapoHour = parseInt(now.toLocaleString('en-US', { timeZone: sapoTz, hour: 'numeric', hour12: false }), 10);
@@ -126,14 +126,14 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           </button>
         </div>
 
-        {/* Madrid (Mi Rey) */}
+        {/* Argentina (Mi Rey) */}
         <div className="flex items-center gap-4 md:gap-6 z-10 w-full lg:w-auto justify-end text-right">
           <div className="flex flex-col items-end">
             <span className="text-[#fabc41] font-label-mono uppercase tracking-widest text-xs md:text-sm mb-1 md:mb-2 text-right flex items-center justify-end gap-1">
               {miReyProfile.isTraveling && '✈️'} {miReyProfile.city} • {miReyProfile.country}
             </span>
             <span className="font-['IBM_Plex_Mono',monospace] text-4xl sm:text-6xl md:text-7xl text-[#eaddff] font-bold leading-none tracking-tight">
-              {madTime}
+              {argTime}
             </span>
             {miReyProfile.statusPhrase && (
               <div className="flex items-center gap-1.5 text-[11px] text-[#e2bec0] italic mt-2 bg-[#201439]/60 border border-[#fabc41]/25 px-2.5 py-1 rounded-xl w-fit max-w-[180px] sm:max-w-[280px] shadow-sm justify-end">
@@ -266,10 +266,13 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
       </section>
 
       {/* Clean Grid (Nav Cards) */}
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* Historial / Notas */}
         <button 
-          onClick={() => onNavigate('muro-notas')}
+          onClick={() => {
+            sessionStorage.setItem('muro_notas_tab', 'lindos');
+            onNavigate('muro-notas');
+          }}
           className="bg-[#2E2247] hover:bg-[#3f3359] p-5 rounded-[2rem] flex flex-col gap-4 transition-all group min-h-[160px] border border-[#5a4042]/20 text-left hover:-translate-y-1 shadow-lg"
         >
           <div className="w-12 h-12 bg-[#221934] rounded-full flex items-center justify-center text-[#e2bec0] group-hover:text-[#ffb2b8] group-hover:scale-110 transition-all shadow-inner">
@@ -311,7 +314,10 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
         {/* Mejoras */}
         <button 
-          onClick={() => onNavigate('muro-notas')}
+          onClick={() => {
+            sessionStorage.setItem('muro_notas_tab', 'mejorar');
+            onNavigate('muro-notas');
+          }}
           className="bg-[#2E2247] hover:bg-[#3f3359] p-5 rounded-[2rem] flex flex-col gap-4 transition-all group min-h-[160px] border border-[#5a4042]/20 text-left hover:-translate-y-1 shadow-lg"
         >
           <div className="w-12 h-12 bg-[#221934] rounded-full flex items-center justify-center text-[#e2bec0] group-hover:text-[#ffb2b8] group-hover:scale-110 transition-all shadow-inner">
@@ -325,7 +331,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
         {/* Mensajes Bonitos */}
         <button 
-          onClick={() => onNavigate('muro-notas')}
+          onClick={() => onNavigate('cartas')}
           className="bg-[#2E2247] hover:bg-[#3f3359] p-5 rounded-[2rem] flex flex-col gap-4 transition-all group min-h-[160px] border border-[#5a4042]/20 text-left hover:-translate-y-1 shadow-lg"
         >
           <div className="w-12 h-12 bg-[#221934] rounded-full flex items-center justify-center text-[#e2bec0] group-hover:text-[#ff5470] group-hover:scale-110 transition-all shadow-inner">
@@ -336,19 +342,6 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           </div>
         </button>
 
-        {/* Salón de Juegos */}
-        <button 
-          onClick={() => onNavigate('juegos')}
-          className="bg-[#2E2247] hover:bg-[#3f3359] p-5 rounded-[2rem] flex flex-col gap-4 transition-all group min-h-[160px] border border-[#5a4042]/20 text-left hover:-translate-y-1 shadow-lg"
-        >
-          <div className="w-12 h-12 bg-[#221934] rounded-full flex items-center justify-center text-[#e2bec0] group-hover:text-[#fabc41] group-hover:scale-110 transition-all shadow-inner">
-            <span className="material-symbols-outlined text-[24px]">sports_esports</span>
-          </div>
-          <div className="mt-auto">
-            <span className="font-headline-md text-base sm:text-lg text-white font-bold block">Salón Juegos</span>
-            <span className="text-[11px] text-[#e2bec0]/70 font-label-mono">3 minijuegos</span>
-          </div>
-        </button>
       </section>
 
     </main>

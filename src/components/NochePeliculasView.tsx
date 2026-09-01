@@ -429,7 +429,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
               {viewingMovieComments.sapoRating && (
                 <div className="bg-[#201439] p-4 rounded-2xl border border-[#7adaa1]/20">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-white flex items-center gap-2">🐸 {sapoProfile.name}</span>
+                    <span className="font-bold text-white flex items-center gap-2"> {sapoProfile.name}</span>
                     <span className="text-[#fabc41] tracking-widest text-sm">{'⭐'.repeat(viewingMovieComments.sapoRating)}</span>
                   </div>
                   {viewingMovieComments.sapoComment ? (
@@ -440,7 +440,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
               {viewingMovieComments.miReyRating && (
                 <div className="bg-[#201439] p-4 rounded-2xl border border-[#fabc41]/20">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-white flex items-center gap-2">👑 {miReyProfile.name}</span>
+                    <span className="font-bold text-white flex items-center gap-2"> {miReyProfile.name}</span>
                     <span className="text-[#fabc41] tracking-widest text-sm">{'⭐'.repeat(viewingMovieComments.miReyRating)}</span>
                   </div>
                   {viewingMovieComments.miReyComment ? (
@@ -548,19 +548,19 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                             {ep.sapoComment && <p className="text-xs text-[#e2bec0] italic">"{ep.sapoComment}"</p>}
                           </div>
                         ) : (
-                          <div className="text-[10px] text-[#e2bec0]/40 italic">🐸 Sin reseña de {sapoProfile.name}</div>
+                          <div className="text-[10px] text-[#e2bec0]/40 italic"> Sin reseña de {sapoProfile.name}</div>
                         )}
 
                         {ep.miReyRating ? (
                           <div>
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-[10px] font-bold text-[#fabc41] uppercase">👑 {miReyProfile.name}</span>
+                              <span className="text-[10px] font-bold text-[#fabc41] uppercase"> {miReyProfile.name}</span>
                               <span className="text-[#a78bfa] text-[10px] tracking-widest">{'⭐'.repeat(ep.miReyRating)}</span>
                             </div>
                             {ep.miReyComment && <p className="text-xs text-[#e2bec0] italic">"{ep.miReyComment}"</p>}
                           </div>
                         ) : (
-                          <div className="text-[10px] text-[#e2bec0]/40 italic">👑 Sin reseña de {miReyProfile.name}</div>
+                          <div className="text-[10px] text-[#e2bec0]/40 italic"> Sin reseña de {miReyProfile.name}</div>
                         )}
                       </div>
                     </div>
@@ -861,13 +861,13 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                       <div className="flex flex-1 gap-3 text-[10px] text-[#e2bec0]/60 font-label-mono">
                         {movie.sapoRating && (
                           <div className="flex items-center gap-1">
-                            <span>🐸</span>
+                            <span></span>
                             <span className="text-[#fabc41]">{'⭐'.repeat(movie.sapoRating)}</span>
                           </div>
                         )}
                         {movie.miReyRating && (
                           <div className="flex items-center gap-1">
-                            <span>👑</span>
+                            <span></span>
                             <span className="text-[#fabc41]">{'⭐'.repeat(movie.miReyRating)}</span>
                           </div>
                         )}

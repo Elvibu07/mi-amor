@@ -7,7 +7,7 @@ interface NavigationProps {
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
   gyeTime: string;
-  madTime: string;
+  argTime: string;
   daysToReunion: number;
   unreadLetters?: number;
   currentUser?: 'Sapo' | 'Mi Rey';
@@ -79,7 +79,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   sapoProfile,
   miReyProfile,
   gyeTime,
-  madTime,
+  argTime,
   daysToReunion,
   unreadLetters = 0,
   currentUser,
@@ -88,8 +88,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   const myProfile = currentUser === 'Sapo' ? sapoProfile : miReyProfile;
 
   return (
-    <header className="bg-[#2E2247]/70 backdrop-blur-md z-50 sticky top-0 px-4 md:px-8 py-3 shadow-md border-b border-[#5a4042]/20">
-      <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
+    <header className="bg-[#2E2247]/70 backdrop-blur-md z-50 sticky top-0 px-4 md:px-8 py-3 shadow-md border-b border-[#5a4042]/20 w-full">
+      <div className="flex items-center justify-between w-full max-w-[1920px] mx-auto gap-4">
         {/* Brand */}
         <button
           onClick={() => onNavigate('lobby')}
@@ -105,7 +105,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         </button>
 
         {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex flex-1 justify-center items-center gap-2 xl:gap-4">
           <NavBtn view="lobby" label="Lobby" icon="house_siding" currentView={currentView} onNavigate={onNavigate} />
           <NavBtn view="memory-vault" label="Vault" icon="photo_library" currentView={currentView} onNavigate={onNavigate} />
           <NavBtn view="misiones" label="Metas" icon="confirmation_number" currentView={currentView} onNavigate={onNavigate} />
@@ -122,7 +122,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="hidden sm:flex items-center gap-3 bg-[#201439]/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#5a4042]/30 shadow-inner">
             <div className="flex flex-col items-end pr-2.5 border-r border-[#5a4042]/30">
               <span className="text-[9px] text-[#e2bec0] font-label-mono uppercase tracking-wider">{miReyProfile.city}</span>
-              <span className="text-xs font-label-mono font-bold text-[#fabc41]">{madTime}</span>
+              <span className="text-xs font-label-mono font-bold text-[#fabc41]">{argTime}</span>
             </div>
             <div className="flex flex-col items-end">
               <span className="text-[9px] text-[#e2bec0] font-label-mono uppercase tracking-wider">{sapoProfile.city}</span>
@@ -141,7 +141,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   style={{ border: `1.5px solid ${currentUser === 'Sapo' ? '#7adaa1' : '#fabc41'}60` }}
                 />
                 <span className="text-[11px] font-label-caps uppercase tracking-wide" style={{ color: currentUser === 'Sapo' ? '#7adaa1' : '#fabc41' }}>
-                  {currentUser === 'Sapo' ? '🐸' : '👑'} {myProfile.name}
+                  {myProfile.name}
                 </span>
               </div>
             )}

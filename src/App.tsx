@@ -107,7 +107,7 @@ export default function App() {
 
   // ── Dual Clocks ────────────────────────────────────────────────────────────
   const [gyeTime, setGyeTime] = useState('--:--');
-  const [madTime, setMadTime] = useState('--:--');
+  const [argTime, setArgTime] = useState('--:--');
 
   useEffect(() => {
     const updateTimes = () => {
@@ -118,9 +118,9 @@ export default function App() {
         : 'America/Guayaquil';
       const miReyTz = miReyProfile.timezone?.startsWith('America/') || miReyProfile.timezone?.startsWith('Europe/') || miReyProfile.timezone?.startsWith('Asia/')
         ? miReyProfile.timezone
-        : 'Europe/Madrid';
+        : 'America/Argentina/Buenos_Aires';
       setGyeTime(now.toLocaleTimeString('es-EC', { timeZone: sapoTz, hour: '2-digit', minute: '2-digit', hour12: false }));
-      setMadTime(now.toLocaleTimeString('es-ES', { timeZone: miReyTz, hour: '2-digit', minute: '2-digit', hour12: false }));
+      setArgTime(now.toLocaleTimeString('es-ES', { timeZone: miReyTz, hour: '2-digit', minute: '2-digit', hour12: false }));
     };
     updateTimes();
     const id = setInterval(updateTimes, 1000);
@@ -232,7 +232,7 @@ export default function App() {
         sapoProfile={sapoProfile}
         miReyProfile={miReyProfile}
         gyeTime={gyeTime}
-        madTime={madTime}
+        argTime={argTime}
         daysToReunion={daysToReunion}
         unreadLetters={unreadLetters}
         currentUser={currentUser}
@@ -257,7 +257,7 @@ export default function App() {
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
             gyeTime={gyeTime}
-            madTime={madTime}
+            argTime={argTime}
             daysToReunion={daysToReunion}
             onSendLove={handleSendLove}
             currentUser={currentUser}
@@ -284,6 +284,7 @@ export default function App() {
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
             daysToReunion={daysToReunion}
+            currentUser={currentUser}
           />
         )}
 
@@ -308,7 +309,7 @@ export default function App() {
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
             gyeTime={gyeTime}
-            madTime={madTime}
+            argTime={argTime}
           />
         )}
 

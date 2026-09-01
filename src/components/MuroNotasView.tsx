@@ -10,6 +10,7 @@ interface MuroNotasViewProps {
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
   daysToReunion: number;
+  currentUser?: 'Sapo' | 'Mi Rey' | null;
 }
 
 export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
@@ -19,9 +20,30 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
   sapoProfile,
   miReyProfile,
   daysToReunion,
+  currentUser,
 }) => {
-  const [activeCategory, setActiveCategory] = useState<'lindos' | 'mejorar'>('mejorar');
+  const formatDate = (dateStr: string) => {
+    if (dateStr === 'Justo ahora') return dateStr;
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const diff = Date.now() - d.getTime();
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      if (days === 0) return 'Hoy';
+      if (days === 1) return 'Ayer';
+      if (days < 7) return `Hace ${days} días`;
+      return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    } catch {
+      return dateStr;
+    }
+  };
+  const [activeCategory, setActiveCategory] = useState<'lindos' | 'mejorar'>(() => {
+    return (sessionStorage.getItem('muro_notas_tab') as 'lindos' | 'mejorar') || 'mejorar';
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('ourlobby_achievements') || '[]'); } catch { return []; }
+  });
 
   // New Note state
   const [newNoteText, setNewNoteText] = useState('');
@@ -29,6 +51,8 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
   const [newUrgency, setNewUrgency] = useState<'calma' | 'importante' | 'urgente'>('importante');
 
   const filteredNotes = notes.filter((n) => n.category === activeCategory);
+  const activeMissions = filteredNotes.filter((n) => !n.isFavorite);
+  const resolvedMissions = filteredNotes.filter((n) => n.isFavorite);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,13 +71,13 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
     const newNote: NoteItem = {
       id: 'note-' + Date.now(),
       text: newNoteText.trim(),
-      author: newAuthor,
-      dateStr: 'Justo ahora',
+      author: currentUser || newAuthor,
+      dateStr: new Date().toISOString(),
       category: activeCategory,
-      urgency: newUrgency,
+      urgency: activeCategory === 'mejorar' ? newUrgency : undefined,
       tapeColor,
       tapeRotation,
-      isFavorite: true,
+      isFavorite: activeCategory === 'mejorar' ? false : true,
     };
 
     onAddNote(newNote);
@@ -62,15 +86,30 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
     setIsModalOpen(false);
   };
 
-  const handleCompleteMission = (id: string) => {
+  const handleCompleteMission = (id: string, isReopen?: boolean) => {
     onToggleFavorite(id);
-    playWinSound();
-    confetti({
-      particleCount: 70,
-      spread: 65,
-      origin: { y: 0.6 },
-      colors: ['#FF5470', '#FFC145', '#6FCF97', '#ffb2b8'],
-    });
+    if (!isReopen) {
+      playWinSound();
+      confetti({
+        particleCount: 70,
+        spread: 65,
+        origin: { y: 0.6 },
+        colors: ['#FF5470', '#FFC145', '#6FCF97', '#ffb2b8'],
+      });
+    }
+  };
+
+  const toggleAchievement = (id: string) => {
+    const isUnlocked = unlockedAchievements.includes(id);
+    const newUnlocked = isUnlocked
+      ? unlockedAchievements.filter(x => x !== id)
+      : [...unlockedAchievements, id];
+    setUnlockedAchievements(newUnlocked);
+    localStorage.setItem('ourlobby_achievements', JSON.stringify(newUnlocked));
+    if (!isUnlocked) {
+      playHeartSound();
+      confetti({ particleCount: 50, spread: 50, origin: { y: 0.8 }, colors: ['#fabc41'] });
+    }
   };
 
   return (
@@ -117,7 +156,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredNotes.map((note) => {
+                {activeMissions.map((note) => {
                   const isUrgent = note.urgency === 'urgente';
                   const isCalma = note.urgency === 'calma';
 
@@ -171,7 +210,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
 
                       {/* Action Button styled per urgency */}
                       <button
-                        onClick={() => handleCompleteMission(note.id)}
+                        onClick={() => handleCompleteMission(note.id, false)}
                         className={`w-full py-2.5 rounded-lg border font-label-caps text-[10px] uppercase tracking-wider font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
                           isUrgent
                             ? 'border-[#FF5470] text-[#FF5470] hover:bg-[#FF5470]/15'
@@ -188,6 +227,50 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                 })}
               </div>
 
+              {activeMissions.length === 0 && (
+                <div className="bg-[#2E2247]/50 rounded-2xl p-8 text-center text-[#e2bec0] border border-dashed border-[#5a4042]/30 my-4">
+                  <span className="text-3xl block mb-2">🎉</span>
+                  <p className="font-headline-md text-white text-base">¡No hay misiones pendientes!</p>
+                  <p className="text-xs text-[#e2bec0]/70 mt-1">Usa el botón de abajo para registrar una nueva.</p>
+                </div>
+              )}
+
+              {/* Misiones Resueltas Section */}
+              {resolvedMissions.length > 0 && (
+                <div className="mt-10">
+                  <h2 className="font-headline-md text-[#6FCF97] mb-4 px-1 flex items-center gap-2 text-xl font-bold">
+                    <span className="material-symbols-outlined text-[#6FCF97]">task_alt</span>
+                    Misiones Resueltas
+                  </h2>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-70">
+                    {resolvedMissions.map((note) => (
+                      <div
+                        key={note.id}
+                        className="bg-[#2E2247]/40 rounded-2xl p-4 flex flex-col justify-between shadow-inner relative border border-[#6FCF97]/20"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-label-mono text-[10px] uppercase text-[#6FCF97] font-bold tracking-wider flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">done_all</span> Resuelta
+                          </span>
+                          <span className="text-[10px] text-[#e2bec0]/70 font-label-mono uppercase">
+                            {note.author === 'Sapo' ? sapoProfile.name : miReyProfile.name}
+                          </span>
+                        </div>
+                        <p className="font-body-md text-[#eaddff]/80 text-center my-3 text-sm line-through decoration-[#FF5470]/50">
+                          {note.text}
+                        </p>
+                        <button
+                          onClick={() => handleCompleteMission(note.id, true)}
+                          className="w-full py-1.5 rounded-lg text-[#e2bec0]/60 hover:text-[#e2bec0] text-[10px] uppercase tracking-wider font-bold transition-all"
+                        >
+                          Reabrir Misión
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {filteredNotes.length === 0 && (
                 <div className="bg-[#2E2247]/50 rounded-2xl p-8 text-center text-[#e2bec0] border border-dashed border-[#5a4042]/30">
                   <span className="text-3xl block mb-2">🎉</span>
@@ -211,12 +294,19 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {/* Achievement Card 1 */}
-                <div className="bg-[#1A1229] rounded-2xl p-4 flex flex-col items-center justify-center shadow-md aspect-square gap-3 border border-white/5 hover:border-white/10 hover:scale-105 transition-all">
+                <div 
+                  onClick={() => toggleAchievement('comunicacion')}
+                  className={`rounded-2xl p-4 flex flex-col items-center justify-center shadow-md aspect-square gap-3 border transition-all cursor-pointer select-none ${
+                    unlockedAchievements.includes('comunicacion') 
+                      ? 'bg-[#2E2247] border-[#FFC145]/30 scale-105' 
+                      : 'bg-[#1A1229] border-white/5 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
+                  }`}
+                >
                   <span
                     className="material-symbols-outlined text-[48px] text-[#FFC145]"
                     style={{
                       fontVariationSettings: "'FILL' 1",
-                      filter: 'drop-shadow(0 0 12px rgba(255,193,69,0.4))',
+                      filter: unlockedAchievements.includes('comunicacion') ? 'drop-shadow(0 0 12px rgba(255,193,69,0.4))' : 'none',
                     }}
                   >
                     emoji_events
@@ -227,12 +317,19 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                 </div>
 
                 {/* Achievement Card 2 */}
-                <div className="bg-[#1A1229] rounded-2xl p-4 flex flex-col items-center justify-center shadow-md aspect-square gap-3 border border-white/5 hover:border-white/10 hover:scale-105 transition-all">
+                <div 
+                  onClick={() => toggleAchievement('paciencia')}
+                  className={`rounded-2xl p-4 flex flex-col items-center justify-center shadow-md aspect-square gap-3 border transition-all cursor-pointer select-none ${
+                    unlockedAchievements.includes('paciencia') 
+                      ? 'bg-[#2E2247] border-[#6FCF97]/30 scale-105' 
+                      : 'bg-[#1A1229] border-white/5 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
+                  }`}
+                >
                   <span
                     className="material-symbols-outlined text-[48px] text-[#6FCF97]"
                     style={{
                       fontVariationSettings: "'FILL' 1",
-                      filter: 'drop-shadow(0 0 12px rgba(111,207,151,0.4))',
+                      filter: unlockedAchievements.includes('paciencia') ? 'drop-shadow(0 0 12px rgba(111,207,151,0.4))' : 'none',
                     }}
                   >
                     lock_open
@@ -243,12 +340,19 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                 </div>
 
                 {/* Achievement Card 3 */}
-                <div className="bg-[#1A1229] rounded-2xl p-4 flex flex-col items-center justify-center shadow-md aspect-square gap-3 border border-white/5 hover:border-white/10 hover:scale-105 transition-all">
+                <div 
+                  onClick={() => toggleAchievement('compromiso')}
+                  className={`rounded-2xl p-4 flex flex-col items-center justify-center shadow-md aspect-square gap-3 border transition-all cursor-pointer select-none ${
+                    unlockedAchievements.includes('compromiso') 
+                      ? 'bg-[#2E2247] border-[#FF5470]/30 scale-105' 
+                      : 'bg-[#1A1229] border-white/5 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
+                  }`}
+                >
                   <span
                     className="material-symbols-outlined text-[48px] text-[#FF5470]"
                     style={{
                       fontVariationSettings: "'FILL' 1",
-                      filter: 'drop-shadow(0 0 12px rgba(255,84,112,0.4))',
+                      filter: unlockedAchievements.includes('compromiso') ? 'drop-shadow(0 0 12px rgba(255,84,112,0.4))' : 'none',
                     }}
                   >
                     favorite
@@ -259,12 +363,19 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                 </div>
 
                 {/* Achievement Card 4 */}
-                <div className="bg-[#1A1229] rounded-2xl p-4 flex flex-col items-center justify-center shadow-md aspect-square gap-3 border border-white/5 hover:border-white/10 hover:scale-105 transition-all">
+                <div 
+                  onClick={() => toggleAchievement('reencuentro')}
+                  className={`rounded-2xl p-4 flex flex-col items-center justify-center shadow-md aspect-square gap-3 border transition-all cursor-pointer select-none ${
+                    unlockedAchievements.includes('reencuentro') 
+                      ? 'bg-[#2E2247] border-[#ffb2b8]/30 scale-105' 
+                      : 'bg-[#1A1229] border-white/5 opacity-60 hover:opacity-100 grayscale hover:grayscale-0'
+                  }`}
+                >
                   <span
-                    className="material-symbols-outlined text-[48px] text-[#FFC145]"
+                    className="material-symbols-outlined text-[48px] text-[#ffb2b8]"
                     style={{
                       fontVariationSettings: "'FILL' 1",
-                      filter: 'drop-shadow(0 0 12px rgba(255,193,69,0.4))',
+                      filter: unlockedAchievements.includes('reencuentro') ? 'drop-shadow(0 0 12px rgba(255,178,184,0.4))' : 'none',
                     }}
                   >
                     flight_takeoff
@@ -340,7 +451,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                           {note.author === 'Sapo' ? sapoProfile.name : miReyProfile.name}
                         </span>
                         <span className="font-label-mono text-[10px] text-[#e2bec0]/70">
-                          {note.dateStr}
+                          {formatDate(note.dateStr)}
                         </span>
                       </div>
                     </div>
@@ -424,99 +535,103 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
               </div>
 
               {/* Urgency Selector (Categoría de Urgencia) */}
-              <div className="flex flex-col gap-2">
-                <label className="font-label-mono text-xs text-[#e2bec0] uppercase tracking-wider">
-                  Categoría de Urgencia:
-                </label>
-                <div className="grid grid-cols-3 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setNewUrgency('calma')}
-                    className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl border transition-all ${
-                      newUrgency === 'calma'
-                        ? 'bg-[#6FCF97]/20 border-[#6FCF97] text-[#6FCF97] font-bold shadow-[0_0_12px_rgba(111,207,151,0.3)]'
-                        : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0]'
-                    }`}
-                  >
-                    <div className="w-3.5 h-3.5 rounded-full bg-[#6FCF97] shadow-[0_0_8px_#6FCF97]"></div>
-                    <span className="text-xs font-label-caps">Con calma</span>
-                  </button>
+              {activeCategory === 'mejorar' && (
+                <div className="flex flex-col gap-2">
+                  <label className="font-label-mono text-xs text-[#e2bec0] uppercase tracking-wider">
+                    Categoría de Urgencia:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setNewUrgency('calma')}
+                      className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl border transition-all ${
+                        newUrgency === 'calma'
+                          ? 'bg-[#6FCF97]/20 border-[#6FCF97] text-[#6FCF97] font-bold shadow-[0_0_12px_rgba(111,207,151,0.3)]'
+                          : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0]'
+                      }`}
+                    >
+                      <div className="w-3.5 h-3.5 rounded-full bg-[#6FCF97] shadow-[0_0_8px_#6FCF97]"></div>
+                      <span className="text-xs font-label-caps">Con calma</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setNewUrgency('importante')}
-                    className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl border transition-all ${
-                      newUrgency === 'importante'
-                        ? 'bg-[#FFC145]/20 border-[#FFC145] text-[#FFC145] font-bold shadow-[0_0_12px_rgba(255,193,69,0.3)]'
-                        : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0]'
-                    }`}
-                  >
-                    <div className="w-3.5 h-3.5 rounded-full bg-[#FFC145] shadow-[0_0_8px_#FFC145]"></div>
-                    <span className="text-xs font-label-caps">Importante</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewUrgency('importante')}
+                      className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl border transition-all ${
+                        newUrgency === 'importante'
+                          ? 'bg-[#FFC145]/20 border-[#FFC145] text-[#FFC145] font-bold shadow-[0_0_12px_rgba(255,193,69,0.3)]'
+                          : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0]'
+                      }`}
+                    >
+                      <div className="w-3.5 h-3.5 rounded-full bg-[#FFC145] shadow-[0_0_8px_#FFC145]"></div>
+                      <span className="text-xs font-label-caps">Importante</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setNewUrgency('urgente')}
-                    className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl border transition-all ${
-                      newUrgency === 'urgente'
-                        ? 'bg-[#FF5470]/20 border-[#FF5470] text-[#FF5470] font-bold shadow-[0_0_12px_rgba(255,84,112,0.3)]'
-                        : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0]'
-                    }`}
-                  >
-                    <div className="w-3.5 h-3.5 rounded-full bg-[#FF5470] shadow-[0_0_8px_#FF5470] animate-pulse"></div>
-                    <span className="text-xs font-label-caps">Urgente</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewUrgency('urgente')}
+                      className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-xl border transition-all ${
+                        newUrgency === 'urgente'
+                          ? 'bg-[#FF5470]/20 border-[#FF5470] text-[#FF5470] font-bold shadow-[0_0_12px_rgba(255,84,112,0.3)]'
+                          : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0]'
+                      }`}
+                    >
+                      <div className="w-3.5 h-3.5 rounded-full bg-[#FF5470] shadow-[0_0_8px_#FF5470] animate-pulse"></div>
+                      <span className="text-xs font-label-caps">Urgente</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Author Selection */}
-              <div className="flex flex-col gap-2">
-                <span className="font-label-caps text-xs text-[#e2bec0] uppercase">
-                  ¿Quién lo registra?
-                </span>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setNewAuthor('Sapo')}
-                    className={`flex-1 flex items-center gap-3 p-3 rounded-2xl border transition-all ${
-                      newAuthor === 'Sapo'
-                        ? 'bg-[#201439] border-[#6FCF97] shadow-[0_0_12px_rgba(111,207,151,0.3)] ring-1 ring-[#6FCF97]'
-                        : 'bg-[#201439]/50 border-transparent opacity-60'
-                    }`}
-                  >
-                    <img
-                      alt="Sapo"
-                      src={sapoProfile.avatar}
-                      className="w-8 h-8 rounded-full object-cover border border-[#6FCF97]"
-                    />
-                    <div className="text-left">
-                      <span className="text-xs font-bold text-white block">{sapoProfile.name} 🐸</span>
-                      <span className="text-[10px] text-[#6FCF97] font-label-mono">{sapoProfile.city}</span>
-                    </div>
-                  </button>
+              {!currentUser && (
+                <div className="flex flex-col gap-2">
+                  <span className="font-label-caps text-xs text-[#e2bec0] uppercase">
+                    ¿Quién lo registra?
+                  </span>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setNewAuthor('Sapo')}
+                      className={`flex-1 flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+                        newAuthor === 'Sapo'
+                          ? 'bg-[#201439] border-[#6FCF97] shadow-[0_0_12px_rgba(111,207,151,0.3)] ring-1 ring-[#6FCF97]'
+                          : 'bg-[#201439]/50 border-transparent opacity-60'
+                      }`}
+                    >
+                      <img
+                        alt="Sapo"
+                        src={sapoProfile.avatar}
+                        className="w-8 h-8 rounded-full object-cover border border-[#6FCF97]"
+                      />
+                      <div className="text-left">
+                        <span className="text-xs font-bold text-white block">{sapoProfile.name} </span>
+                        <span className="text-[10px] text-[#6FCF97] font-label-mono">{sapoProfile.city}</span>
+                      </div>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setNewAuthor('Mi Rey')}
-                    className={`flex-1 flex items-center gap-3 p-3 rounded-2xl border transition-all ${
-                      newAuthor === 'Mi Rey'
-                        ? 'bg-[#201439] border-[#FFC145] shadow-[0_0_12px_rgba(255,193,69,0.3)] ring-1 ring-[#FFC145]'
-                        : 'bg-[#201439]/50 border-transparent opacity-60'
-                    }`}
-                  >
-                    <img
-                      alt="Mi Rey"
-                      src={miReyProfile.avatar}
-                      className="w-8 h-8 rounded-full object-cover border border-[#FFC145]"
-                    />
-                    <div className="text-left">
-                      <span className="text-xs font-bold text-white block">{miReyProfile.name} 👑</span>
-                      <span className="text-[10px] text-[#FFC145] font-label-mono">{miReyProfile.city}</span>
-                    </div>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewAuthor('Mi Rey')}
+                      className={`flex-1 flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+                        newAuthor === 'Mi Rey'
+                          ? 'bg-[#201439] border-[#FFC145] shadow-[0_0_12px_rgba(255,193,69,0.3)] ring-1 ring-[#FFC145]'
+                          : 'bg-[#201439]/50 border-transparent opacity-60'
+                      }`}
+                    >
+                      <img
+                        alt="Mi Rey"
+                        src={miReyProfile.avatar}
+                        className="w-8 h-8 rounded-full object-cover border border-[#FFC145]"
+                      />
+                      <div className="text-left">
+                        <span className="text-xs font-bold text-white block">{miReyProfile.name} </span>
+                        <span className="text-[10px] text-[#FFC145] font-label-mono">{miReyProfile.city}</span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Submit Button */}
               <div className="pt-2">

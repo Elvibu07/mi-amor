@@ -348,7 +348,7 @@ export const MisionesView: React.FC<MisionesViewProps> = ({
                       className="w-8 h-8 rounded-full object-cover border border-[#6FCF97]"
                     />
                     <div className="text-left">
-                      <span className="text-xs font-bold text-white block">Sapo 🐸</span>
+                      <span className="text-xs font-bold text-white block">{sapoProfile.name}</span>
                       <span className="text-[10px] text-[#6FCF97] font-label-mono">Guayaquil</span>
                     </div>
                   </button>
@@ -368,8 +368,8 @@ export const MisionesView: React.FC<MisionesViewProps> = ({
                       className="w-8 h-8 rounded-full object-cover border border-[#FFC145]"
                     />
                     <div className="text-left">
-                      <span className="text-xs font-bold text-white block">Mi Rey 👑</span>
-                      <span className="text-[10px] text-[#FFC145] font-label-mono">Madrid</span>
+                      <span className="text-xs font-bold text-white block">{miReyProfile.name}</span>
+                      <span className="text-[10px] text-[#FFC145] font-label-mono">Argentina</span>
                     </div>
                   </button>
                 </div>

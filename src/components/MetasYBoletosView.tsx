@@ -33,7 +33,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [newGoalDesc, setNewGoalDesc] = useState('');
-  const [newGoalCategory, setNewGoalCategory] = useState<'distancia' | 'reencuentro' | 'madrid' | 'guayaquil' | 'futuro'>('reencuentro');
+  const [newGoalCategory, setNewGoalCategory] = useState<'distancia' | 'reencuentro' | 'argentina' | 'guayaquil' | 'futuro'>('reencuentro');
   const [newGoalAuthor, setNewGoalAuthor] = useState<'Sapo' | 'Mi Rey' | 'Juntos'>('Juntos');
 
   // Coupons filters & state
@@ -143,8 +143,8 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
         return { label: 'A Distancia 🌐', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
       case 'reencuentro':
         return { label: 'Reencuentro ✈️', color: 'bg-[#ff5470]/20 text-[#ffb2b8] border-[#ff5470]/30' };
-      case 'madrid':
-        return { label: 'En Madrid 🇪🇸', color: 'bg-[#fabc41]/20 text-[#fabc41] border-[#fabc41]/30' };
+      case 'argentina':
+        return { label: 'En Argentina 🇦🇷', color: 'bg-[#fabc41]/20 text-[#fabc41] border-[#fabc41]/30' };
       case 'guayaquil':
         return { label: 'En Guayaquil 🇪🇨', color: 'bg-[#7adaa1]/20 text-[#7adaa1] border-[#7adaa1]/30' };
       case 'futuro':
@@ -288,7 +288,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                 { id: 'todas', label: 'Todas las Metas' },
                 { id: 'reencuentro', label: '✈️ Reencuentro' },
                 { id: 'distancia', label: '🌐 A Distancia' },
-                { id: 'madrid', label: '🇪🇸 En Madrid' },
+                { id: 'argentina', label: '🇦🇷 En Argentina' },
                 { id: 'guayaquil', label: '🇪🇨 En Guayaquil' },
                 { id: 'futuro', label: '💫 A Futuro' },
               ].map((cat) => (
@@ -338,7 +338,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                           src={isSapo ? sapoProfile.avatar : isMiRey ? miReyProfile.avatar : sapoProfile.avatar}
                         />
                         <span className="text-[11px] text-[#e2bec0] font-label-mono">
-                          {goal.author === 'Juntos' ? 'De los dos 💕' : `Por ${goal.author}`}
+                          {goal.author === 'Juntos' ? 'De los dos 💕' : `Por ${goal.author === 'Sapo' ? sapoProfile.name : miReyProfile.name}`}
                         </span>
                       </div>
                     </div>
@@ -447,8 +447,8 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                 { id: 'todos', label: 'Todos los Boletos' },
                 { id: 'disponibles', label: '✨ Disponibles' },
                 { id: 'canjeados', label: '💖 Ya Canjeados' },
-                { id: 'para-sapo', label: `🐸 Para ${sapoProfile.name}` },
-                { id: 'para-mirey', label: `👑 Para ${miReyProfile.name}` },
+                { id: 'para-sapo', label: ` Para ${sapoProfile.name}` },
+                { id: 'para-mirey', label: ` Para ${miReyProfile.name}` },
               ].map((filter) => (
                 <button
                   key={filter.id}
@@ -657,7 +657,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                   {[
                     { id: 'reencuentro', label: '✈️ Reencuentro' },
                     { id: 'distancia', label: '🌐 A Distancia' },
-                    { id: 'madrid', label: '🇪🇸 En Madrid' },
+                    { id: 'argentina', label: '🇦🇷 En Argentina' },
                     { id: 'guayaquil', label: '🇪🇨 En Guayaquil' },
                     { id: 'futuro', label: '💫 A Futuro' },
                   ].map((cat) => (
@@ -692,7 +692,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                         : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0]'
                     }`}
                   >
-                    🐸 {sapoProfile.name}
+                     {sapoProfile.name}
                   </button>
 
                   <button
@@ -704,7 +704,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                         : 'bg-[#201439] border-[#5a4042]/30 text-[#e2bec0]'
                     }`}
                   >
-                    👑 {miReyProfile.name}
+                     {miReyProfile.name}
                   </button>
 
                   <button
@@ -792,8 +792,8 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                     onChange={(e) => setNewCouponFrom(e.target.value as any)}
                     className="w-full bg-[#201439] text-white rounded-xl p-2.5 border border-[#5a4042]/30 text-xs font-bold"
                   >
-                    <option value="Sapo">🐸 {sapoProfile.name}</option>
-                    <option value="Mi Rey">👑 {miReyProfile.name}</option>
+                    <option value="Sapo"> {sapoProfile.name}</option>
+                    <option value="Mi Rey"> {miReyProfile.name}</option>
                   </select>
                 </div>
 
@@ -804,8 +804,8 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                     onChange={(e) => setNewCouponTo(e.target.value as any)}
                     className="w-full bg-[#201439] text-white rounded-xl p-2.5 border border-[#5a4042]/30 text-xs font-bold"
                   >
-                    <option value="Mi Rey">👑 {miReyProfile.name}</option>
-                    <option value="Sapo">🐸 {sapoProfile.name}</option>
+                    <option value="Mi Rey"> {miReyProfile.name}</option>
+                    <option value="Sapo"> {sapoProfile.name}</option>
                   </select>
                 </div>
               </div>
