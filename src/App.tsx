@@ -86,12 +86,25 @@ export default function App() {
 
   // ── Love Event Sync ────────────────────────────────────────────────────────
   const [loveEvent, setLoveEvent] = useSyncedDoc<LoveEvent | null>('shared', 'love_event', 'ourlobby_love', null);
+  const [loveMessage, setLoveMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (loveEvent && currentUser && loveEvent.sender !== currentUser) {
       if (Date.now() - loveEvent.timestamp < 10000) { // Recent event
         playHeartSound();
-        confetti({ particleCount: 60, spread: 70, origin: { y: 0.5 }, colors: ['#ff5470', '#fabc41', '#7adaa1', '#ffb2b8'] });
+        confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, colors: ['#ff5470', '#fabc41', '#7adaa1', '#ffb2b8', '#a78bfa'] });
+        
+        const senderName = loveEvent.sender === 'Sapo' ? sapoProfile.name : miReyProfile.name;
+        const receiverMessages = [
+          `${senderName} te ha enviado muchos besos`,
+          `${senderName} está pensando en ti`,
+          `Un abrazo gigante de parte de ${senderName}`,
+          `${senderName} te extraña un montón`,
+          `Recibiste amor de ${senderName} ❤️`
+        ];
+        const randomMsg = receiverMessages[Math.floor(Math.random() * receiverMessages.length)];
+        setLoveMessage(randomMsg);
+        setTimeout(() => setLoveMessage(null), 3500);
       }
     }
   }, [loveEvent?.timestamp]);
@@ -182,12 +195,24 @@ export default function App() {
   // ── Handlers: Love & Games ─────────────────────────────────────────────────
   const handleSendLove = () => {
     playHeartSound();
-    confetti({ particleCount: 60, spread: 70, origin: { y: 0.5 }, colors: ['#ff5470', '#fabc41', '#7adaa1', '#ffb2b8'] });
+    confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, colors: ['#ff5470', '#fabc41', '#7adaa1', '#ffb2b8', '#a78bfa'] });
+    
     if (currentUser) {
       setLoveEvent({
         timestamp: Date.now(),
         sender: currentUser,
       });
+
+      const receiverName = currentUser === 'Sapo' ? miReyProfile.name : sapoProfile.name;
+      const senderMessages = [
+        `Cariño enviado a ${receiverName} ❤️`,
+        `Besos volando hacia ${receiverName} ✨`,
+        `Le has enviado amor a ${receiverName} 💖`,
+        `Tu amor va en camino a ${receiverName} 🚀`
+      ];
+      const randomMsg = senderMessages[Math.floor(Math.random() * senderMessages.length)];
+      setLoveMessage(randomMsg);
+      setTimeout(() => setLoveMessage(null), 3500);
     }
   };
 
@@ -388,6 +413,31 @@ export default function App() {
             onUpdateMiReyProfile={setMiReyProfile}
             onBackToLobby={() => setCurrentView('lobby')}
           />
+        )}
+
+        {/* --- MODALS & OVERLAYS --- */}
+        {/* Love Overlay (Balloon shape) */}
+        {loveMessage && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#180c30]/70 backdrop-blur-sm pointer-events-none transition-opacity animate-fade-in">
+            <div className="relative flex flex-col items-center animate-float">
+              {/* Balloon Body */}
+              <div 
+                className="bg-gradient-to-b from-[#ff5470] to-[#e63956] w-72 md:w-80 h-[320px] p-8 flex flex-col items-center justify-center text-white shadow-[0_15px_50px_rgba(255,84,112,0.5)] border border-[#ffb2b8]/40"
+                style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
+              >
+                <div className="text-6xl md:text-7xl mb-4 animate-pulse" style={{ filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.6))' }}>❤️</div>
+                <h2 className="text-xl md:text-2xl font-headline-md font-bold leading-snug text-center drop-shadow-md">
+                  {loveMessage}
+                </h2>
+              </div>
+              
+              {/* Balloon Knot */}
+              <div className="w-6 h-6 bg-[#e63956] rotate-45 -mt-4 rounded-sm shadow-sm z-10 border border-[#ffb2b8]/20"></div>
+              
+              {/* Balloon String */}
+              <div className="w-[2px] h-24 bg-white/40 -mt-2 z-0 shadow-[0_0_5px_rgba(255,255,255,0.5)]"></div>
+            </div>
+          </div>
         )}
       </div>
 
