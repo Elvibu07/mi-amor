@@ -300,6 +300,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                     ))}
                   </div>
                 </div>
+              )}
             </div>
 
             {/* Vitrina de Logros Section */}
