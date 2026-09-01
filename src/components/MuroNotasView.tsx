@@ -300,14 +300,6 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                     ))}
                   </div>
                 </div>
-              )}
-              {filteredNotes.length === 0 && (
-                <div className="bg-[#2E2247]/50 rounded-2xl p-8 text-center text-[#e2bec0] border border-dashed border-[#5a4042]/30">
-                  <span className="text-3xl block mb-2">🎉</span>
-                  <p className="font-headline-md text-white text-base">¡No hay misiones pendientes!</p>
-                  <p className="text-xs text-[#e2bec0]/70 mt-1">Usa el botón de abajo para registrar una nueva.</p>
-                </div>
-              )}
             </div>
 
             {/* Vitrina de Logros Section */}

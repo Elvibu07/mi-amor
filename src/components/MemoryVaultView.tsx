@@ -114,7 +114,7 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
               Memory Vault
             </h1>
             <p className="text-sm md:text-base text-[#e2bec0] mt-1 font-body-md">
-              A chronicle of us across distances. Nuestras fotos y momentos inolvidables.
+              Una crónica de nosotros a través de la distancia. Nuestras fotos y momentos inolvidables.
             </p>
           </div>
           <button
