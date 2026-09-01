@@ -16,28 +16,32 @@ export const MiniMusicPlayer: React.FC<MiniMusicPlayerProps> = ({ currentUser, s
 
   const handlePlay = () => {
     playCutePop();
-    // En el global no podemos obtener el tiempo exacto tan facil sin la ref de YT,
-    // pero podemos asumir que el timestamp actualiza el estado. 
-    // Para simplificar, usamos el ultimo timestamp guardado.
-    setMusicState({
-      ...musicState,
-      isPlaying: true,
-      updatedAt: Date.now(),
-      setBy: currentUser,
-    });
+    try {
+      setMusicState({
+        ...musicState,
+        isPlaying: true,
+        updatedAt: Date.now(),
+        setBy: currentUser,
+      });
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   const handlePause = () => {
     playCutePop();
-    // Calculamos donde se quedo asumiendo que estaba sonando
-    const timePassed = (Date.now() - musicState.updatedAt) / 1000;
-    setMusicState({
-      ...musicState,
-      isPlaying: false,
-      timestamp: musicState.timestamp + timePassed,
-      updatedAt: Date.now(),
-      setBy: currentUser,
-    });
+    try {
+      const timePassed = (Date.now() - musicState.updatedAt) / 1000;
+      setMusicState({
+        ...musicState,
+        isPlaying: false,
+        timestamp: musicState.timestamp + timePassed,
+        updatedAt: Date.now(),
+        setBy: currentUser,
+      });
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   const getName = (role: 'Sapo' | 'Mi Rey') => {

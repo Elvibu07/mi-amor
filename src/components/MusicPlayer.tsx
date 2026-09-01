@@ -21,50 +21,63 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
     if (!musicState || !playerRef.current) return;
     const player = playerRef.current;
     
-    // Check if we need to update state
-    const playerState = player.getPlayerState(); // 1 = playing, 2 = paused
-    const currentTime = player.getCurrentTime();
+    try {
+      // Check if we need to update state
+      const playerState = player.getPlayerState(); // 1 = playing, 2 = paused
+      const currentTime = player.getCurrentTime();
 
-    if (musicState.isPlaying && playerState !== 1) {
-      // Calculate where it should be based on updatedAt
-      const timePassed = (Date.now() - musicState.updatedAt) / 1000;
-      const targetTime = musicState.timestamp + timePassed;
-      if (Math.abs(currentTime - targetTime) > 2) {
-        player.seekTo(targetTime, true);
+      if (musicState.isPlaying && playerState !== 1) {
+        // Calculate where it should be based on updatedAt
+        const timePassed = (Date.now() - musicState.updatedAt) / 1000;
+        const targetTime = musicState.timestamp + timePassed;
+        if (Math.abs(currentTime - targetTime) > 2) {
+          player.seekTo(targetTime, true);
+        }
+        player.playVideo();
+      } else if (!musicState.isPlaying && playerState !== 2) {
+        player.pauseVideo();
+        if (Math.abs(currentTime - musicState.timestamp) > 2) {
+          player.seekTo(musicState.timestamp, true);
+        }
       }
-      player.playVideo();
-    } else if (!musicState.isPlaying && playerState !== 2) {
-      player.pauseVideo();
-      if (Math.abs(currentTime - musicState.timestamp) > 2) {
-        player.seekTo(musicState.timestamp, true);
-      }
+    } catch (error) {
+      // Ignore errors that happen when player is unmounted or reloading
+      console.warn("YouTube player API error:", error);
     }
   }, [musicState]);
 
   const handlePlay = () => {
     if (!musicState || !playerRef.current) return;
     playCutePop();
-    const time = playerRef.current.getCurrentTime();
-    setMusicState({
-      ...musicState,
-      isPlaying: true,
-      timestamp: time,
-      updatedAt: Date.now(),
-      setBy: currentUser,
-    });
+    try {
+      const time = playerRef.current.getCurrentTime();
+      setMusicState({
+        ...musicState,
+        isPlaying: true,
+        timestamp: time,
+        updatedAt: Date.now(),
+        setBy: currentUser,
+      });
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   const handlePause = () => {
     if (!musicState || !playerRef.current) return;
     playCutePop();
-    const time = playerRef.current.getCurrentTime();
-    setMusicState({
-      ...musicState,
-      isPlaying: false,
-      timestamp: time,
-      updatedAt: Date.now(),
-      setBy: currentUser,
-    });
+    try {
+      const time = playerRef.current.getCurrentTime();
+      setMusicState({
+        ...musicState,
+        isPlaying: false,
+        timestamp: time,
+        updatedAt: Date.now(),
+        setBy: currentUser,
+      });
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   const handleSetSong = (e: React.FormEvent) => {

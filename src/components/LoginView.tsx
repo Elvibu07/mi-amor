@@ -16,8 +16,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ sapoProfile, miReyProfile,
   const [successFor, setSuccessFor] = useState<'Sapo' | 'Mi Rey' | null>(null);
 
   // Helper to read PINs
-  const getSapoPin = () => localStorage.getItem('ourlobby_pin_sapo') || '1111';
-  const getMiReyPin = () => localStorage.getItem('ourlobby_pin_mirey') || '0000';
+  const getSapoPin = () => sapoProfile.pin || '1111';
+  const getMiReyPin = () => miReyProfile.pin || '0000';
 
   const handleKey = useCallback(
     (digit: string) => {

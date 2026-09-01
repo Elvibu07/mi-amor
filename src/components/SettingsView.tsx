@@ -57,10 +57,11 @@ interface ProfileEditorProps {
   emoji: string;
   accentColor: string;
   profile: UserProfile;
+  otherProfilePin: string;
   onSave: (updated: UserProfile) => void;
 }
 
-const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor, profile, onSave }) => {
+const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor, profile, otherProfilePin, onSave }) => {
   const [name, setName] = useState(profile.name);
   const [status, setStatus] = useState(profile.statusPhrase);
   const [avatar, setAvatar] = useState(profile.avatar);
@@ -79,7 +80,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor
   const [pinError, setPinError] = useState('');
   const [showLocationPresets, setShowLocationPresets] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
-  const [isTraveling, setIsTraveling] = useState(false);
+  const [isTraveling, setIsTraveling] = useState(profile.isTraveling || false);
 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -133,17 +134,15 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor
         return;
       }
       
-      const otherUser = label === 'Sapo' ? 'Mi Rey' : 'Sapo';
-      const otherUserPin = localStorage.getItem(otherUser === 'Sapo' ? 'ourlobby_pin_sapo' : 'ourlobby_pin_mirey') || (otherUser === 'Sapo' ? '1111' : '0000');
+      const otherUserPin = otherProfilePin || (label === 'Mi Rey' ? '1111' : '0000');
       
       if (pin === otherUserPin) {
         setPinError('El PIN debe ser diferente al de tu pareja');
         return;
       }
 
-      // Save PIN to localStorage
-      const storageKey = label === 'Sapo' ? 'ourlobby_pin_sapo' : 'ourlobby_pin_mirey';
-      localStorage.setItem(storageKey, pin);
+      setPin('');
+      setConfirmPin('');
     }
     setPinError('');
 
@@ -152,9 +151,11 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji, accentColor
       name,
       statusPhrase: status,
       avatar,
+      pin: pin || profile.pin,
       city,
       country,
       timezone,
+      isTraveling,
       pushAlerts: push,
       soundEffects: sound,
     });
@@ -482,6 +483,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               emoji="🐸"
               accentColor="#7adaa1"
               profile={sapoProfile}
+              otherProfilePin={miReyProfile.pin || '0000'}
               onSave={onUpdateSapoProfile}
             />
           ) : (
@@ -490,39 +492,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               emoji="👑"
               accentColor="#fabc41"
               profile={miReyProfile}
+              otherProfilePin={sapoProfile.pin || '1111'}
               onSave={onUpdateMiReyProfile}
             />
           )}
         </div>
 
-        {/* Shared settings */}
-        <div className="bg-[#2f2348]/60 rounded-3xl p-6 border border-[#5a4042]/20">
-          <h3 className="font-headline-md text-lg text-white mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#a78bfa]">tune</span>
-            Ajustes del Santuario
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="bg-[#25193d] p-4 rounded-2xl flex items-center gap-3 border border-[#5a4042]/20">
-              <div className="w-9 h-9 rounded-xl bg-[#3a2e54] flex items-center justify-center text-[#ffb2b8]">
-                <span className="material-symbols-outlined text-sm">public</span>
-              </div>
-              <div>
-                <p className="text-white text-sm font-medium">Idioma</p>
-                <p className="font-label-mono text-[#e2bec0] text-xs">Español</p>
-              </div>
-              <span className="ml-auto text-xs text-[#7adaa1] font-label-caps uppercase font-bold">Activo</span>
-            </div>
-            <div className="bg-[#25193d] p-4 rounded-2xl flex items-center gap-3 border border-[#5a4042]/20">
-              <div className="w-9 h-9 rounded-xl bg-[#3a2e54] flex items-center justify-center text-[#7adaa1]">
-                <span className="material-symbols-outlined text-sm">palette</span>
-              </div>
-              <div>
-                <p className="text-white text-sm font-medium">Tema</p>
-                <p className="font-label-mono text-[#e2bec0] text-xs">Night Sanctuary 🌙</p>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );

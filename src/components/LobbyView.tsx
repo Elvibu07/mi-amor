@@ -94,8 +94,8 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             src={sapoProfile.avatar}
           />
           <div className="flex flex-col">
-            <span className="text-[#7adaa1] font-label-mono uppercase tracking-widest text-xs md:text-sm mb-1 md:mb-2">
-              {sapoProfile.city} • {sapoProfile.country}
+            <span className="text-[#7adaa1] font-label-mono uppercase tracking-widest text-xs md:text-sm mb-1 md:mb-2 flex items-center gap-1">
+              {sapoProfile.city} • {sapoProfile.country} {sapoProfile.isTraveling && '✈️'}
             </span>
             <span className="font-['IBM_Plex_Mono',monospace] text-4xl sm:text-6xl md:text-7xl text-[#eaddff] font-bold leading-none tracking-tight">
               {gyeTime}
@@ -129,8 +129,8 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
         {/* Madrid (Mi Rey) */}
         <div className="flex items-center gap-4 md:gap-6 z-10 w-full lg:w-auto justify-end text-right">
           <div className="flex flex-col items-end">
-            <span className="text-[#fabc41] font-label-mono uppercase tracking-widest text-xs md:text-sm mb-1 md:mb-2">
-              {miReyProfile.city} • {miReyProfile.country}
+            <span className="text-[#fabc41] font-label-mono uppercase tracking-widest text-xs md:text-sm mb-1 md:mb-2 text-right flex items-center justify-end gap-1">
+              {miReyProfile.isTraveling && '✈️'} {miReyProfile.city} • {miReyProfile.country}
             </span>
             <span className="font-['IBM_Plex_Mono',monospace] text-4xl sm:text-6xl md:text-7xl text-[#eaddff] font-bold leading-none tracking-tight">
               {madTime}

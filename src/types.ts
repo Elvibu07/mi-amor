@@ -23,6 +23,7 @@ export interface UserProfile {
   statusPhrase: string;
   pushAlerts: boolean;
   soundEffects: boolean;
+  isTraveling?: boolean;
   pin?: string; // hashed 4-digit PIN
 }
 
