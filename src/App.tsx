@@ -419,24 +419,39 @@ export default function App() {
         {/* Love Overlay (Balloon shape) */}
         {loveMessage && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#180c30]/70 backdrop-blur-sm pointer-events-none transition-opacity animate-fade-in">
-            <div className="relative flex flex-col items-center animate-float">
-              {/* Balloon Body */}
-              <div 
-                className="bg-gradient-to-b from-[#ff5470] to-[#e63956] w-72 md:w-80 h-[320px] p-8 flex flex-col items-center justify-center text-white shadow-[0_15px_50px_rgba(255,84,112,0.5)] border border-[#ffb2b8]/40"
-                style={{ borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%' }}
-              >
-                <div className="text-6xl md:text-7xl mb-4 animate-pulse" style={{ filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.6))' }}>❤️</div>
-                <h2 className="text-xl md:text-2xl font-headline-md font-bold leading-snug text-center drop-shadow-md">
-                  {loveMessage}
-                </h2>
+            <div className="relative flex flex-col items-center animate-float mt-12">
+              
+              {/* Heart Balloon SVG & Text Container */}
+              <div className="relative w-[340px] h-[340px] flex items-center justify-center">
+                {/* SVG Heart Balloon Background */}
+                <svg viewBox="0 0 32 32" className="absolute inset-0 w-full h-full drop-shadow-[0_15px_35px_rgba(255,84,112,0.7)] z-0 overflow-visible">
+                  <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style={{stopColor: '#ff5470', stopOpacity: 1}} />
+                      <stop offset="100%" style={{stopColor: '#e63956', stopOpacity: 1}} />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Heart Shape */}
+                  <path d="M16 26.5 C16 26.5 4 17 4 9.5 C4 5 8 3 12 5.5 C14.5 7 16 9.5 16 9.5 C16 9.5 17.5 7 20 5.5 C24 3 28 5 28 9.5 C28 17 16 26.5 16 26.5 Z" fill="url(#grad1)" stroke="#ffb2b8" strokeWidth="0.2"/>
+                  
+                  {/* Subtle shine on balloon */}
+                  <path d="M7.5 9.5 C7.5 6.5 10 5.5 12 6.5 C10 7 8.5 8.5 8.5 11.5 C8 10.5 7.5 10 7.5 9.5 Z" fill="rgba(255,255,255,0.4)"/>
+                  
+                  {/* Knot */}
+                  <polygon points="14.5,26 17.5,26 16.5,28 15.5,28" fill="#e63956" />
+                  
+                  {/* String */}
+                  <path d="M16 28 Q13 33 17 38 T15 48" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="0.4"/>
+                </svg>
+
+                {/* Text overlay */}
+                <div className="relative z-10 flex flex-col items-center text-white px-10 -mt-6">
+                  <h2 className="text-xl md:text-2xl font-headline-md font-bold leading-snug text-center drop-shadow-md max-w-[220px]">
+                    {loveMessage}
+                  </h2>
+                </div>
               </div>
-              
-              {/* Balloon Knot */}
-              <div className="w-6 h-6 bg-[#e63956] rotate-45 -mt-4 rounded-sm shadow-sm z-10 border border-[#ffb2b8]/20"></div>
-              
-              {/* Balloon String */}
-              <div className="w-[2px] h-24 bg-white/40 -mt-2 z-0 shadow-[0_0_5px_rgba(255,255,255,0.5)]"></div>
-            </div>
           </div>
         )}
       </div>
