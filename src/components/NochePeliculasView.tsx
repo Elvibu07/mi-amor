@@ -7,9 +7,11 @@ interface NochePeliculasViewProps {
   movies: MovieItem[];
   onAddMovie: (movie: MovieItem) => void;
   onUpdateMovie: (id: string, update: Partial<MovieItem>) => void;
+  onDeleteMovie: (id: string) => void;
   series: SeriesItem[];
   onAddSeries: (s: SeriesItem) => void;
   onUpdateSeries: (id: string, update: Partial<SeriesItem>) => void;
+  onDeleteSeries: (id: string) => void;
   currentUser: 'Sapo' | 'Mi Rey';
   sapoProfile: UserProfile;
   miReyProfile: UserProfile;
@@ -109,12 +111,13 @@ const SyncCountdown: React.FC<{ title: string; onEnd: () => void }> = ({ title, 
 
 // ── Main Component ────────────────────────────────────────────────────────
 export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
-  movies, onAddMovie, onUpdateMovie,
-  series, onAddSeries, onUpdateSeries,
+  movies, onAddMovie, onUpdateMovie, onDeleteMovie,
+  series, onAddSeries, onUpdateSeries, onDeleteSeries,
   currentUser, sapoProfile, miReyProfile,
 }) => {
-  const [activeSection, setActiveSection] = useState<'peliculas' | 'series'>('peliculas');
+  const [activeSection, setActiveSection] = useState<'peliculas' | 'series' | 'anime'>('peliculas');
   const [tab, setTab] = useState<'pendiente' | 'viendo' | 'vista' | 'terminada' | 'todas'>('pendiente');
+  const [selectedGenreFilter, setSelectedGenreFilter] = useState<string | null>(null);
   
   // Movie Modals
   const [addingMovie, setAddingMovie] = useState(false);
@@ -128,12 +131,17 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
   const [viewingSeriesEpisodes, setViewingSeriesEpisodes] = useState<SeriesItem | null>(null);
 
   // Forms
-  const [form, setForm] = useState({ title: '', genre: '', year: '' });
+  const [form, setForm] = useState({ title: '', genre: '', year: '', animeType: '' });
+  const [seriesSeasonsConfig, setSeriesSeasonsConfig] = useState<{ seasonNumber: number; totalEpisodes: number }[]>([{ seasonNumber: 1, totalEpisodes: 12 }]);
   const [reviewData, setReviewData] = useState({ rating: 0, comment: '' });
-  const [episodeForm, setEpisodeForm] = useState({ episodeNumber: 1, rating: 0, comment: '' });
+  const [episodeForm, setEpisodeForm] = useState({ seasonNumber: 1, episodeNumber: 1, rating: 0, comment: '' });
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const seriesInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setSelectedGenreFilter(null);
+  }, [activeSection, tab]);
 
   // ── Derived Data ────────────────────────────────────────────────────────
   const getName = (role: 'Sapo' | 'Mi Rey' | 'Juntos' | string) => {
@@ -142,19 +150,37 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
     return role;
   };
 
-  const currentItems = activeSection === 'peliculas' ? movies : series;
-  const filtered = tab === 'todas' 
+  const currentItems = activeSection === 'peliculas' 
+    ? movies 
+    : activeSection === 'anime' 
+      ? series.filter(s => s.isAnime)
+      : series.filter(s => !s.isAnime);
+
+  const filteredByTab = tab === 'todas' 
     ? currentItems 
     : currentItems.filter((i) => {
         if (activeSection === 'peliculas') return i.status === tab;
-        if (activeSection === 'series') {
-          if (tab === 'vista') return false; // series don't have 'vista', they have 'terminada'
+        if (activeSection === 'series' || activeSection === 'anime') {
+          if (tab === 'vista') return false; 
           return i.status === tab;
         }
         return false;
       });
 
+  const filtered = selectedGenreFilter 
+    ? filteredByTab.filter(i => {
+        if (activeSection === 'anime') {
+          return (i as SeriesItem).animeType === selectedGenreFilter;
+        }
+        return i.genre === selectedGenreFilter;
+      })
+    : filteredByTab;
+
   const getStats = (status: string) => currentItems.filter(i => i.status === status).length;
+  
+  const availableGenres = Array.from(new Set(
+    currentItems.map(i => activeSection === 'anime' ? (i as SeriesItem).animeType : i.genre).filter(Boolean)
+  )) as string[];
   
   const tabs = activeSection === 'peliculas' ? [
     { key: 'pendiente', label: 'Pendientes', count: getStats('pendiente'), color: '#a78bfa' },
@@ -165,7 +191,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
     { key: 'pendiente', label: 'Pendientes', count: getStats('pendiente'), color: '#a78bfa' },
     { key: 'viendo', label: 'Viendo', count: getStats('viendo'), color: '#fabc41' },
     { key: 'terminada', label: 'Terminadas', count: getStats('terminada'), color: '#7adaa1' },
-    { key: 'todas', label: 'Todas', count: series.length, color: '#e2bec0' },
+    { key: 'todas', label: 'Todas', count: currentItems.length, color: '#e2bec0' },
   ] as const;
 
   // ── Handlers: Movies ────────────────────────────────────────────────────
@@ -180,7 +206,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
       status: 'pendiente',
       createdAt: new Date().toISOString(),
     });
-    setForm({ title: '', genre: '', year: '' });
+    setForm({ title: '', genre: '', year: '', animeType: '' });
     setAddingMovie(false);
     playCutePop();
   };
@@ -209,17 +235,23 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
 
   // ── Handlers: Series ────────────────────────────────────────────────────
   const handleAddSeriesSubmit = () => {
-    if (!form.title.trim()) return;
+    if (!form.title.trim() || seriesSeasonsConfig.length === 0) return;
     onAddSeries({
       id: `series-${Date.now()}`,
       title: form.title.trim(),
       genre: form.genre || undefined,
+      isAnime: activeSection === 'anime',
+      animeType: activeSection === 'anime' ? (form.animeType || undefined) : undefined,
       suggestedBy: currentUser,
       status: 'pendiente',
+      seasonsConfig: seriesSeasonsConfig,
+      currentSeason: 1,
+      currentEpisode: 0,
       episodes: [],
       createdAt: new Date().toISOString(),
     });
-    setForm({ title: '', genre: '', year: '' });
+    setForm({ title: '', genre: '', year: '', animeType: '' });
+    setSeriesSeasonsConfig([{ seasonNumber: 1, totalEpisodes: 12 }]);
     setAddingSeries(false);
     playCutePop();
   };
@@ -229,14 +261,69 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
     playCutePop();
   };
 
+  const revertSeriesToWatching = (s: SeriesItem) => {
+    onUpdateSeries(s.id, { status: 'viendo' });
+    playCutePop();
+  };
+
+  const incrementSeriesEpisode = (s: SeriesItem) => {
+    if (!s.seasonsConfig || s.seasonsConfig.length === 0) return;
+    
+    let nextEp = (s.currentEpisode || 0) + 1;
+    let nextSeason = s.currentSeason || 1;
+    let newStatus = s.status;
+
+    const currentSeasonConfig = s.seasonsConfig.find(sc => sc.seasonNumber === nextSeason);
+    
+    if (currentSeasonConfig && nextEp > currentSeasonConfig.totalEpisodes) {
+       // Move to next season
+       const nextSeasonConfig = s.seasonsConfig.find(sc => sc.seasonNumber === nextSeason + 1);
+       if (nextSeasonConfig) {
+          nextSeason += 1;
+          nextEp = 1;
+       } else {
+          // Finished the last season
+          nextEp = currentSeasonConfig.totalEpisodes; // clamp
+          newStatus = 'terminada';
+          confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 }, colors: ['#a78bfa', '#ff5470', '#7adaa1'] });
+       }
+    }
+
+    const dateStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const newEpReview = {
+      id: `ep-${Date.now()}`,
+      seasonNumber: nextSeason,
+      episodeNumber: nextEp,
+      watchedAt: dateStr,
+    };
+
+    onUpdateSeries(s.id, {
+      currentSeason: nextSeason,
+      currentEpisode: nextEp,
+      status: newStatus,
+      episodes: [...s.episodes, newEpReview]
+    });
+    
+    playCutePop();
+  };
+
   const markSeriesCompleted = (s: SeriesItem) => {
     onUpdateSeries(s.id, { status: 'terminada' });
     confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 }, colors: ['#a78bfa', '#ff5470', '#7adaa1'] });
   };
 
   const openLogEpisode = (s: SeriesItem) => {
-    const nextEp = s.episodes.length > 0 ? Math.max(...s.episodes.map(e => e.episodeNumber)) + 1 : 1;
-    setEpisodeForm({ episodeNumber: nextEp, rating: 0, comment: '' });
+    let defaultS = 1;
+    let defaultEp = 1;
+    if (s.episodes.length > 0) {
+       const latest = s.episodes.reduce((prev, current) => (prev.seasonNumber > current.seasonNumber || (prev.seasonNumber === current.seasonNumber && prev.episodeNumber > current.episodeNumber)) ? prev : current);
+       defaultS = latest.seasonNumber;
+       defaultEp = latest.episodeNumber;
+    } else {
+       defaultS = s.currentSeason || 1;
+       defaultEp = s.currentEpisode || 1;
+    }
+    setEpisodeForm({ seasonNumber: defaultS, episodeNumber: defaultEp, rating: 0, comment: '' });
     setLoggingEpisodeFor(s);
   };
 
@@ -244,7 +331,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
     if (!loggingEpisodeFor) return;
     
     // Check if this episode already exists
-    const existingEpIdx = loggingEpisodeFor.episodes.findIndex(e => e.episodeNumber === episodeForm.episodeNumber);
+    const existingEpIdx = loggingEpisodeFor.episodes.findIndex(e => e.episodeNumber === episodeForm.episodeNumber && e.seasonNumber === episodeForm.seasonNumber);
     const dateStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     
     let newEpisodes = [...loggingEpisodeFor.episodes];
@@ -264,6 +351,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
       // Add new
       const newEp: EpisodeReview = {
         id: `ep-${Date.now()}`,
+        seasonNumber: episodeForm.seasonNumber,
         episodeNumber: episodeForm.episodeNumber,
         watchedAt: dateStr,
         sapoRating: currentUser === 'Sapo' ? episodeForm.rating : undefined,
@@ -378,15 +466,27 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
               <p className="text-xs text-[#e2bec0]/60 mt-1">Registrar episodio visto</p>
             </div>
             
-            <div className="mb-4">
-              <label className="text-[10px] uppercase font-label-mono tracking-widest text-[#e2bec0]/70 mb-1 block">Número de Episodio</label>
-              <input
-                type="number"
-                min={1}
-                value={episodeForm.episodeNumber}
-                onChange={(e) => setEpisodeForm(p => ({ ...p, episodeNumber: parseInt(e.target.value) || 1 }))}
-                className="w-full bg-[#221934] border border-[#5a4042]/30 rounded-xl px-4 py-3 text-white text-lg font-bold placeholder-[#e2bec0]/30 focus:outline-none focus:border-[#a78bfa]"
-              />
+            <div className="grid grid-cols-2 gap-3 mb-4">
+               <div>
+                  <label className="text-[10px] uppercase font-label-mono tracking-widest text-[#e2bec0]/70 mb-1 block">Temporada</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={episodeForm.seasonNumber}
+                    onChange={(e) => setEpisodeForm(p => ({ ...p, seasonNumber: parseInt(e.target.value) || 1 }))}
+                    className="w-full bg-[#221934] border border-[#5a4042]/30 rounded-xl px-4 py-3 text-white text-lg font-bold focus:outline-none focus:border-[#a78bfa]"
+                  />
+               </div>
+               <div>
+                  <label className="text-[10px] uppercase font-label-mono tracking-widest text-[#e2bec0]/70 mb-1 block">Episodio</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={episodeForm.episodeNumber}
+                    onChange={(e) => setEpisodeForm(p => ({ ...p, episodeNumber: parseInt(e.target.value) || 1 }))}
+                    className="w-full bg-[#221934] border border-[#5a4042]/30 rounded-xl px-4 py-3 text-white text-lg font-bold focus:outline-none focus:border-[#a78bfa]"
+                  />
+               </div>
             </div>
 
             <div className="flex justify-center mb-4">
@@ -429,10 +529,12 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
               {viewingSeriesEpisodes.episodes.length === 0 ? (
                 <p className="text-center text-sm text-[#e2bec0]/50 italic py-8">Todavía no han registrado episodios.</p>
               ) : (
-                [...viewingSeriesEpisodes.episodes].sort((a,b) => b.episodeNumber - a.episodeNumber).map(ep => (
+                [...viewingSeriesEpisodes.episodes]
+                  .sort((a,b) => b.seasonNumber !== a.seasonNumber ? b.seasonNumber - a.seasonNumber : b.episodeNumber - a.episodeNumber)
+                  .map(ep => (
                   <div key={ep.id} className="bg-[#201439] rounded-2xl border border-[#5a4042]/30 p-4">
                     <div className="flex justify-between items-end mb-3 border-b border-[#5a4042]/20 pb-2">
-                      <span className="font-bold text-white font-headline-md">Episodio {ep.episodeNumber}</span>
+                      <span className="font-bold text-white font-headline-md">Temp {ep.seasonNumber || 1} • Ep {ep.episodeNumber}</span>
                       <span className="text-[10px] text-[#e2bec0]/50 font-label-mono">{ep.watchedAt}</span>
                     </div>
                     
@@ -474,9 +576,9 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className={`bg-[#2E2247] border rounded-3xl max-w-sm w-full p-6 shadow-2xl ${addingMovie ? 'border-[#fabc41]/20' : 'border-[#a78bfa]/20'}`}>
             <div className="flex items-center gap-3 mb-5">
-              <span className="text-2xl">{addingMovie ? '🎬' : '📺'}</span>
+              <span className="text-2xl">{addingMovie ? '🎬' : activeSection === 'anime' ? '🌸' : '📺'}</span>
               <h3 className="font-headline-md text-white font-bold">
-                Agregar {addingMovie ? 'Película' : 'Serie / Anime'}
+                Agregar {addingMovie ? 'Película' : activeSection === 'anime' ? 'Anime' : 'Serie'}
               </h3>
             </div>
 
@@ -490,15 +592,26 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                 className={`w-full bg-[#221934] border border-[#5a4042]/30 rounded-xl px-4 py-3 text-white placeholder-[#e2bec0]/30 focus:outline-none focus:border-[${addingMovie ? '#fabc41' : '#a78bfa'}]/40 text-sm`}
               />
               <div className="grid grid-cols-2 gap-2">
-                <select
-                  value={form.genre}
-                  onChange={(e) => setForm((p) => ({ ...p, genre: e.target.value }))}
-                  className="bg-[#221934] border border-[#5a4042]/30 rounded-xl px-3 py-3 text-sm text-white focus:outline-none appearance-none cursor-pointer"
-                >
-                  <option value="">Género...</option>
-                  {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-                {addingMovie && (
+                {activeSection === 'anime' ? (
+                   <select
+                     value={form.animeType}
+                     onChange={(e) => setForm((p) => ({ ...p, animeType: e.target.value }))}
+                     className="w-full bg-[#221934] border border-[#5a4042]/30 rounded-xl px-3 py-3 text-sm text-white focus:outline-none appearance-none cursor-pointer"
+                   >
+                     <option value="">Tipo de Anime...</option>
+                     {['Shonen', 'Shojo', 'Seinen', 'Isekai', 'Romance', 'Acción', 'Comedia', 'Drama', 'Slice of Life', 'Spokon'].map((g) => <option key={g} value={g}>{g}</option>)}
+                   </select>
+                ) : (
+                  <select
+                    value={form.genre}
+                    onChange={(e) => setForm((p) => ({ ...p, genre: e.target.value }))}
+                    className="bg-[#221934] border border-[#5a4042]/30 rounded-xl px-3 py-3 text-sm text-white focus:outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="">Género...</option>
+                    {GENRES.filter(g => activeSection === 'peliculas' || g !== 'Anime').map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                )}
+                {addingMovie ? (
                   <input
                     value={form.year}
                     onChange={(e) => setForm((p) => ({ ...p, year: e.target.value }))}
@@ -506,23 +619,55 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                     maxLength={4}
                     className="bg-[#221934] border border-[#5a4042]/30 rounded-xl px-3 py-3 text-sm text-white placeholder-[#e2bec0]/30 focus:outline-none"
                   />
+                ) : (
+                  <div className="flex items-center gap-2 bg-[#221934] border border-[#5a4042]/30 rounded-xl px-3 py-3 text-sm">
+                    <span className="text-[#e2bec0]/60">Temporadas:</span>
+                    <button onClick={() => setSeriesSeasonsConfig(p => p.length > 1 ? p.slice(0, -1) : p)} className="text-[#a78bfa] hover:text-white font-bold px-1">-</button>
+                    <span className="text-white w-4 text-center font-bold">{seriesSeasonsConfig.length}</span>
+                    <button onClick={() => setSeriesSeasonsConfig(p => [...p, { seasonNumber: p.length + 1, totalEpisodes: 12 }])} className="text-[#a78bfa] hover:text-white font-bold px-1">+</button>
+                  </div>
                 )}
               </div>
+
+              {addingSeries && (
+                <div className="bg-[#221934] border border-[#5a4042]/20 rounded-xl p-3 space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
+                  {seriesSeasonsConfig.map((sc, i) => (
+                    <div key={i} className="flex justify-between items-center text-sm">
+                      <span className="text-white font-bold">Temporada {sc.seasonNumber}</span>
+                      <div className="flex items-center gap-2">
+                         <input 
+                            type="number" 
+                            min={1} 
+                            value={sc.totalEpisodes} 
+                            onChange={(e) => {
+                               const newConfig = [...seriesSeasonsConfig];
+                               newConfig[i].totalEpisodes = parseInt(e.target.value) || 1;
+                               setSeriesSeasonsConfig(newConfig);
+                            }}
+                            className="bg-[#180c30] text-center w-12 rounded px-1 py-0.5 text-white border border-[#5a4042]/30 focus:outline-none focus:border-[#a78bfa]/50"
+                         />
+                         <span className="text-[#e2bec0]/50 text-xs">eps</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               <p className="text-[10px] text-[#e2bec0]/40 font-label-mono">Sugerida por: {getName(currentUser)}</p>
             </div>
 
             <div className="flex gap-2">
-              <button onClick={() => { setAddingMovie(false); setAddingSeries(false); }} className="flex-1 py-2.5 rounded-xl text-sm text-[#e2bec0]/60 bg-[#221934] hover:text-white transition-colors">
+              <button onClick={() => { setAddingMovie(false); setAddingSeries(false); setForm({ title: '', genre: '', year: '', animeType: '' }); setSeriesSeasonsConfig([{ seasonNumber: 1, totalEpisodes: 12 }]); }} className="flex-1 py-2.5 rounded-xl text-sm text-[#e2bec0]/60 bg-[#221934] hover:text-white transition-colors">
                 Cancelar
               </button>
               <button
                 onClick={addingMovie ? handleAddMovieSubmit : handleAddSeriesSubmit}
                 disabled={!form.title.trim()}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 ${
-                  addingMovie ? 'bg-[#fabc41] hover:bg-[#ffd06b] text-[#180c30]' : 'bg-[#a78bfa] hover:bg-[#b8a1fb]'
+                  addingMovie ? 'bg-[#fabc41] hover:bg-[#ffd06b] text-[#180c30]' : activeSection === 'anime' ? 'bg-[#ff5470] hover:bg-[#ff7a90]' : 'bg-[#a78bfa] hover:bg-[#b8a1fb]'
                 }`}
               >
-                Agregar {addingMovie ? '🎬' : '📺'}
+                Agregar {addingMovie ? '🎬' : activeSection === 'anime' ? '🌸' : '📺'}
               </button>
             </div>
           </div>
@@ -552,26 +697,38 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                     : 'text-[#e2bec0] hover:text-white'
                 }`}
              >
-               📺 Series & Anime
+               📺 Series
+             </button>
+             <button 
+                onClick={() => { setActiveSection('anime'); setTab('pendiente'); }}
+                className={`px-6 py-2 rounded-full font-label-caps uppercase text-[10px] tracking-widest transition-all ${
+                  activeSection === 'anime' 
+                    ? 'bg-[#ff5470] text-white font-bold shadow-[0_0_15px_rgba(255,84,112,0.3)]' 
+                    : 'text-[#e2bec0] hover:text-white'
+                }`}
+             >
+               🌸 Anime
              </button>
           </div>
         </div>
 
         <div className="flex items-center justify-between">
           <div>
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full mb-2 border ${activeSection === 'peliculas' ? 'bg-[#fabc41]/15 border-[#fabc41]/30 text-[#fabc41]' : 'bg-[#a78bfa]/15 border-[#a78bfa]/30 text-[#a78bfa]'}`}>
-              <span className="text-sm">{activeSection === 'peliculas' ? '🍿' : '📺'}</span>
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full mb-2 border ${activeSection === 'peliculas' ? 'bg-[#fabc41]/15 border-[#fabc41]/30 text-[#fabc41]' : activeSection === 'series' ? 'bg-[#a78bfa]/15 border-[#a78bfa]/30 text-[#a78bfa]' : 'bg-[#ff5470]/15 border-[#ff5470]/30 text-[#ff5470]'}`}>
+              <span className="text-sm">{activeSection === 'peliculas' ? '🍿' : activeSection === 'series' ? '📺' : '🌸'}</span>
               <span className="font-label-caps text-[10px] uppercase tracking-widest">
-                {activeSection === 'peliculas' ? 'Noche de Películas' : 'Maratón de Series'}
+                {activeSection === 'peliculas' ? 'Noche de Películas' : activeSection === 'series' ? 'Maratón de Series' : 'Maratón Otaku'}
               </span>
             </div>
             <h1 className="font-display-lg text-2xl md:text-3xl text-white">
-              {activeSection === 'peliculas' ? 'Nuestra Filmoteca' : 'Nuestra Serieteca'}
+              {activeSection === 'peliculas' ? 'Nuestra Filmoteca' : activeSection === 'series' ? 'Nuestra Serieteca' : 'Nuestra Animeteca'}
             </h1>
             <p className="text-sm text-[#e2bec0]/50 mt-1 font-body-md">
               {activeSection === 'peliculas' 
                 ? `${movies.filter(m => m.status === 'vista').length} películas vistas juntos 🎬`
-                : `${series.filter(s => s.status === 'terminada').length} series terminadas 🏆`
+                : activeSection === 'series'
+                ? `${series.filter(s => s.status === 'terminada' && !s.isAnime).length} series terminadas 🏆`
+                : `${series.filter(s => s.status === 'terminada' && s.isAnime).length} animes terminados 🏆`
               }
             </p>
           </div>
@@ -583,7 +740,9 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
             className={`flex items-center gap-2 font-headline-md font-bold px-4 py-2.5 rounded-2xl text-sm transition-all hover:scale-105 ${
               activeSection === 'peliculas' 
                 ? 'bg-[#fabc41] hover:bg-[#ffd06b] text-[#180c30] shadow-[0_4px_20px_rgba(250,188,65,0.4)]'
-                : 'bg-[#a78bfa] hover:bg-[#b8a1fb] text-white shadow-[0_4px_20px_rgba(167,139,250,0.4)]'
+                : activeSection === 'series'
+                ? 'bg-[#a78bfa] hover:bg-[#b8a1fb] text-white shadow-[0_4px_20px_rgba(167,139,250,0.4)]'
+                : 'bg-[#ff5470] hover:bg-[#ff7a90] text-white shadow-[0_4px_20px_rgba(255,84,112,0.4)]'
             }`}
           >
             <span className="material-symbols-outlined text-base">add</span>
@@ -620,6 +779,32 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
         ))}
       </div>
 
+      {/* Genre Filter */}
+      {availableGenres.length > 0 && (
+        <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar items-center">
+          <span className="text-xs text-[#e2bec0]/60 font-label-caps uppercase mr-1">Filtro:</span>
+          <button
+            onClick={() => setSelectedGenreFilter(null)}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all ${
+              selectedGenreFilter === null ? 'bg-white/10 text-white' : 'text-[#e2bec0]/50 hover:bg-white/5'
+            }`}
+          >
+            Todos
+          </button>
+          {availableGenres.map(g => (
+            <button
+              key={g}
+              onClick={() => setSelectedGenreFilter(g)}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all whitespace-nowrap ${
+                selectedGenreFilter === g ? 'bg-[#ff5470]/20 text-[#ff5470] border border-[#ff5470]/30' : 'bg-[#2E2247] border border-[#5a4042]/20 text-[#e2bec0]/70 hover:text-white'
+              }`}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-[#e2bec0]/40">
@@ -652,12 +837,21 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                         {movie.year && <span className="text-[10px] text-[#e2bec0]/30">• {movie.year}</span>}
                       </div>
                     </div>
-                    <span
-                      className="text-[10px] font-label-caps uppercase tracking-wide px-2 py-0.5 rounded-full flex-shrink-0"
-                      style={{ background: `${statusColor}20`, color: statusColor }}
-                    >
-                      {STATUS_LABELS[movie.status]}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span
+                        className="text-[10px] font-label-caps uppercase tracking-wide px-2 py-0.5 rounded-full"
+                        style={{ background: `${statusColor}20`, color: statusColor }}
+                      >
+                        {STATUS_LABELS[movie.status]}
+                      </span>
+                      <button 
+                        onClick={() => { if(window.confirm('¿Seguro que quieres eliminar esta película?')) onDeleteMovie(movie.id); }} 
+                        className="text-[#e2bec0]/30 hover:text-[#ff5470] transition-colors flex items-center justify-center"
+                        title="Eliminar película"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-[10px] text-[#e2bec0]/40 font-label-mono mb-3">
@@ -747,18 +941,41 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                         {seriesItem.genre && <span className="text-[10px] text-[#e2bec0]/50">{seriesItem.genre}</span>}
                       </div>
                     </div>
-                    <span
-                      className="text-[10px] font-label-caps uppercase tracking-wide px-2 py-0.5 rounded-full flex-shrink-0"
-                      style={{ background: `${statusColor}20`, color: statusColor }}
-                    >
-                      {STATUS_LABELS[seriesItem.status]}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span
+                        className="text-[10px] font-label-caps uppercase tracking-wide px-2 py-0.5 rounded-full"
+                        style={{ background: `${statusColor}20`, color: statusColor }}
+                      >
+                        {STATUS_LABELS[seriesItem.status]}
+                      </span>
+                      <button 
+                        onClick={() => { if(window.confirm('¿Seguro que quieres eliminar esta serie?')) onDeleteSeries(seriesItem.id); }} 
+                        className="text-[#e2bec0]/30 hover:text-[#ff5470] transition-colors flex items-center justify-center"
+                        title="Eliminar serie"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between mb-3 text-[10px] text-[#e2bec0]/60 font-label-mono">
                     <span>💡 Sugerida por {getName(seriesItem.suggestedBy)}</span>
-                    {maxEp > 0 && <span>Episodio {maxEp}</span>}
                   </div>
+
+                  {seriesItem.status !== 'pendiente' && seriesItem.seasonsConfig && (
+                    <div className="mb-4">
+                       <div className="flex justify-between text-[10px] text-[#e2bec0]/80 font-label-mono mb-1">
+                          <span>Temporada {seriesItem.currentSeason || 1}</span>
+                          <span>Ep {seriesItem.currentEpisode || 0} / {seriesItem.seasonsConfig.find(sc => sc.seasonNumber === (seriesItem.currentSeason || 1))?.totalEpisodes || '?'}</span>
+                       </div>
+                       <div className="h-1.5 w-full bg-[#180c30] rounded-full overflow-hidden">
+                          <div 
+                             className="h-full bg-[#a78bfa] transition-all duration-500" 
+                             style={{ width: `${Math.min(100, ((seriesItem.currentEpisode || 0) / (seriesItem.seasonsConfig.find(sc => sc.seasonNumber === (seriesItem.currentSeason || 1))?.totalEpisodes || 1)) * 100)}%` }}
+                          ></div>
+                       </div>
+                    </div>
+                  )}
 
                   {seriesItem.episodes.length > 0 && (
                      <button 
@@ -784,18 +1001,23 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                     )}
                     {seriesItem.status === 'viendo' && (
                       <>
-                        <button onClick={() => openLogEpisode(seriesItem)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-white bg-[#a78bfa] hover:bg-[#b8a1fb] transition-all">
-                          <span className="material-symbols-outlined text-sm">add</span> Ep. {maxEp + 1}
+                        <button onClick={() => incrementSeriesEpisode(seriesItem)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-white bg-[#a78bfa] hover:bg-[#b8a1fb] transition-all">
+                          <span className="material-symbols-outlined text-sm">add</span> 1 Episodio
                         </button>
-                        <button onClick={() => markSeriesCompleted(seriesItem)} className="px-3 py-2 rounded-xl text-xs font-bold bg-[#7adaa1]/20 hover:bg-[#7adaa1]/40 text-[#7adaa1] transition-all border border-[#7adaa1]/30 flex items-center justify-center" title="Marcar como terminada">
-                          <span className="material-symbols-outlined text-sm">done_all</span>
+                        <button onClick={() => openLogEpisode(seriesItem)} className="px-3 py-2 rounded-xl text-xs font-bold bg-[#201439] hover:bg-[#2a1d45] text-[#e2bec0] transition-all border border-[#5a4042]/20 flex items-center justify-center" title="Dejar Reseña">
+                          <span className="material-symbols-outlined text-sm">rate_review</span>
                         </button>
                       </>
                     )}
                     {seriesItem.status === 'terminada' && (
-                       <div className="flex-1 py-2 rounded-xl text-xs font-bold text-center bg-[#7adaa1]/20 text-[#7adaa1] border border-[#7adaa1]/30">
-                         ¡Serie Completada! 🎉
-                       </div>
+                      <>
+                        <div className="flex-1 py-2 rounded-xl text-xs font-bold text-center bg-[#7adaa1]/20 text-[#7adaa1] border border-[#7adaa1]/30">
+                          ¡Completada! 🎉
+                        </div>
+                        <button onClick={() => revertSeriesToWatching(seriesItem)} className="px-3 py-2 rounded-xl text-xs font-bold bg-[#201439] hover:bg-[#2a1d45] text-[#e2bec0] transition-all border border-[#5a4042]/20 flex items-center justify-center" title="Volver a ver (Nueva Temporada)">
+                          <span className="material-symbols-outlined text-sm">replay</span>
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

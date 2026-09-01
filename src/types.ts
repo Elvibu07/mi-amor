@@ -134,9 +134,15 @@ export interface MovieItem {
   createdAt: string;
 }
 
+export interface SeasonConfig {
+  seasonNumber: number;
+  totalEpisodes: number;
+}
+
 /** Review for a single episode of a series */
 export interface EpisodeReview {
   id: string;
+  seasonNumber: number;
   episodeNumber: number;
   watchedAt: string;
   sapoRating?: number;
@@ -150,8 +156,13 @@ export interface SeriesItem {
   id: string;
   title: string;
   genre?: string;
+  isAnime?: boolean;
+  animeType?: string;
   suggestedBy: 'Sapo' | 'Mi Rey' | 'Juntos';
   status: 'pendiente' | 'viendo' | 'terminada';
+  seasonsConfig: SeasonConfig[];
+  currentSeason: number;
+  currentEpisode: number;
   episodes: EpisodeReview[];
   createdAt: string;
 }

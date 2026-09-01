@@ -1,5 +1,5 @@
 import React from 'react';
-import { ViewType, GameScore } from '../types';
+import { ViewType, GameScore, UserProfile } from '../types';
 import { playCutePop } from '../utils/audio';
 
 interface SalonJuegosViewProps {

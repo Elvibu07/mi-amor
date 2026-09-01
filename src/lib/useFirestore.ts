@@ -149,7 +149,7 @@ export function useSyncedCollection<T extends { id: string }>(
     if (isFirebaseConfigured && db) {
       const colRef = collection(db, collectionPath);
       const { id: _id, ...rest } = item as Record<string, unknown>;
-      addDoc(colRef, { ...rest, createdAt: new Date().toISOString() }).catch(console.warn);
+      addDoc(colRef, removeUndefined({ ...rest, createdAt: new Date().toISOString() })).catch(console.warn);
     } else {
       setItems((prev) => {
         const next = [item, ...prev];
@@ -168,7 +168,7 @@ export function useSyncedCollection<T extends { id: string }>(
     if (isFirebaseConfigured && db) {
       import('./firebase').then(({ doc: fbDoc, updateDoc: fbUpdate }) => {
         const colRef = fbDoc(db!, collectionPath, id);
-        fbUpdate(colRef, update as object).catch(console.warn);
+        fbUpdate(colRef, removeUndefined(update as object)).catch(console.warn);
       });
     }
   }, [collectionPath, localKey]);

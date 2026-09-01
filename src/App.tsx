@@ -79,10 +79,10 @@ export default function App() {
   const [letters, addLetter, updateLetter] = useSyncedCollection<LetterItem>('letters', 'ourlobby_letters', []);
 
   // ── Movies (NEW) ───────────────────────────────────────────────────────────
-  const [movies, addMovie, updateMovie] = useSyncedCollection<MovieItem>('movies', 'ourlobby_movies', []);
+  const [movies, addMovie, updateMovie, removeMovie] = useSyncedCollection<MovieItem>('movies', 'ourlobby_movies', []);
 
-  // ── Series (NEW) ───────────────────────────────────────────────────────────
-  const [series, addSeries, updateSeries] = useSyncedCollection<SeriesItem>('series', 'ourlobby_series', []);
+  // ── 7. Series State (NEW) ───────────────────────────────────────────────────
+  const [series, addSeries, updateSeries, removeSeries] = useSyncedCollection<SeriesItem>('series', 'ourlobby_series', []);
 
   // ── Days to reunion ────────────────────────────────────────────────────────
   const [daysToReunion, setDaysToReunion] = useState<number>(() => {
@@ -160,10 +160,12 @@ export default function App() {
   // ── Handlers: Movies (NEW) ─────────────────────────────────────────────────
   const handleAddMovie = addMovie;
   const handleUpdateMovie = updateMovie;
+  const handleDeleteMovie = removeMovie;
 
   // ── Handlers: Series (NEW) ─────────────────────────────────────────────────
   const handleAddSeries = addSeries;
   const handleUpdateSeries = updateSeries;
+  const handleDeleteSeries = removeSeries;
 
   // ── Handlers: Love & Games ─────────────────────────────────────────────────
   const handleSendLove = () => {
@@ -308,9 +310,11 @@ export default function App() {
             movies={movies}
             onAddMovie={handleAddMovie}
             onUpdateMovie={handleUpdateMovie}
+            onDeleteMovie={handleDeleteMovie}
             series={series}
             onAddSeries={handleAddSeries}
             onUpdateSeries={handleUpdateSeries}
+            onDeleteSeries={handleDeleteSeries}
             currentUser={currentUser}
             sapoProfile={sapoProfile}
             miReyProfile={miReyProfile}
