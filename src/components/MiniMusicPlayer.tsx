@@ -11,6 +11,19 @@ interface MiniMusicPlayerProps {
 
 export const MiniMusicPlayer: React.FC<MiniMusicPlayerProps> = ({ currentUser, sapoProfile, miReyProfile }) => {
   const [musicState, setMusicState] = useSyncedDoc<MusicState | null>('shared', 'music_state', 'ourlobby_music', null);
+  const [localVolume, setLocalVolume] = React.useState(() => {
+    const saved = localStorage.getItem('ourlobby_music_volume');
+    return saved ? parseInt(saved, 10) : 100;
+  });
+
+  React.useEffect(() => {
+    const handleVolumeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      setLocalVolume(customEvent.detail);
+    };
+    window.addEventListener('change-local-volume', handleVolumeChange);
+    return () => window.removeEventListener('change-local-volume', handleVolumeChange);
+  }, []);
 
   if (!musicState) return null;
 
@@ -74,15 +87,37 @@ export const MiniMusicPlayer: React.FC<MiniMusicPlayerProps> = ({ currentUser, s
           <span className="font-headline-md text-white text-xs truncate">{musicState.title}</span>
           <span className="text-[9px] text-[#e2bec0]/70 font-label-mono truncate">Puesta por {getName(musicState.setBy)}</span>
         </div>
-        <button 
-          onClick={musicState.isPlaying ? handlePause : handlePlay}
-          className="w-10 h-10 shrink-0 rounded-full bg-[#ff5470] text-white flex items-center justify-center hover:scale-105 transition-transform"
-        >
-          <span className="material-symbols-outlined text-[20px]">
-            {musicState.isPlaying ? 'pause' : 'play_arrow'}
-          </span>
-        </button>
       </div>
+        {/* Controls */}
+        <div className="flex flex-col gap-2 mt-4">
+          <div className="flex items-center justify-center gap-6 w-full bg-[#221934]/60 py-2 px-4 rounded-full backdrop-blur-sm border border-[#5a4042]/20">
+            <button 
+              onClick={musicState.isPlaying ? handlePause : handlePlay}
+              className="w-10 h-10 p-2 bg-[#ff5470] text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-[0_4px_16px_rgba(255,84,112,0.5)]"
+            >
+              <span className="material-symbols-outlined text-xl">
+                {musicState.isPlaying ? 'pause' : 'play_arrow'}
+              </span>
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-2 px-2 mt-1">
+            <span className="material-symbols-outlined text-[#e2bec0]/70 text-[10px]">volume_down</span>
+            <input 
+              type="range" 
+              min="0" max="100" 
+              value={localVolume}
+              onChange={(e) => {
+                const vol = parseInt(e.target.value, 10);
+                setLocalVolume(vol);
+                localStorage.setItem('ourlobby_music_volume', vol.toString());
+                window.dispatchEvent(new CustomEvent('change-local-volume', { detail: vol }));
+              }}
+              className="flex-1 h-1 bg-[#201439] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-[#7adaa1] [&::-webkit-slider-thumb]:rounded-full"
+            />
+            <span className="material-symbols-outlined text-[#e2bec0]/70 text-[10px]">volume_up</span>
+          </div>
+        </div>
     </div>
   );
 };

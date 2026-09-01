@@ -15,6 +15,30 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
   const [musicState, setMusicState] = useSyncedDoc<MusicState | null>('shared', 'music_state', 'ourlobby_music', null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [inputUrl, setInputUrl] = useState('');
+  const [localVolume, setLocalVolume] = useState(() => {
+    const saved = localStorage.getItem('ourlobby_music_volume');
+    return saved ? parseInt(saved, 10) : 100;
+  });
+
+  // Listen for local volume changes from MiniMusicPlayer
+  useEffect(() => {
+    const handleVolumeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      setLocalVolume(customEvent.detail);
+      if (playerRef.current) {
+        playerRef.current.setVolume(customEvent.detail);
+      }
+    };
+    window.addEventListener('change-local-volume', handleVolumeChange);
+    return () => window.removeEventListener('change-local-volume', handleVolumeChange);
+  }, []);
+
+  // Sync volume when player mounts or localVolume changes
+  useEffect(() => {
+    if (playerRef.current) {
+      playerRef.current.setVolume(localVolume);
+    }
+  }, [localVolume]);
 
   // Sync player when musicState changes
   useEffect(() => {
@@ -38,6 +62,14 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
         player.pauseVideo();
         if (Math.abs(currentTime - musicState.timestamp) > 2) {
           player.seekTo(musicState.timestamp, true);
+        }
+      }
+
+      // Check playlist index sync
+      if (musicState.isPlaylist && musicState.playlistIndex !== undefined && player.getPlaylistIndex) {
+        const currentIndex = player.getPlaylistIndex();
+        if (currentIndex !== -1 && currentIndex !== musicState.playlistIndex) {
+          player.playVideoAt(musicState.playlistIndex);
         }
       }
     } catch (error) {
@@ -83,17 +115,47 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
   const handleSetSong = (e: React.FormEvent) => {
     e.preventDefault();
     const id = getYouTubeID(inputUrl);
-    if (!id) return;
+    
+    let listParam = null;
+    try {
+      const urlObj = new URL(inputUrl.startsWith('http') ? inputUrl : `https://${inputUrl}`);
+      listParam = urlObj.searchParams.get('list');
+    } catch (err) {
+      // ignore
+    }
+
+    if (!id && !listParam) return;
+    
     playCutePop();
     setMusicState({
-      youtubeId: id,
-      title: 'YouTube Sync',
+      youtubeId: id || '',
+      isPlaylist: !!listParam,
+      playlistId: listParam || undefined,
+      playlistIndex: 0,
+      title: listParam ? 'YouTube Playlist' : 'YouTube Sync',
       isPlaying: true,
       timestamp: 0,
       updatedAt: Date.now(),
       setBy: currentUser,
     });
     setInputUrl('');
+  };
+
+  const handleNextTrack = () => {
+    if (!musicState || !musicState.isPlaylist || !playerRef.current) return;
+    playCutePop();
+    try {
+      const currentIndex = playerRef.current.getPlaylistIndex() || 0;
+      setMusicState({
+        ...musicState,
+        playlistIndex: currentIndex + 1,
+        timestamp: 0,
+        updatedAt: Date.now(),
+        setBy: currentUser
+      });
+    } catch(e) {
+      console.warn(e);
+    }
   };
 
   const getName = (role: 'Sapo' | 'Mi Rey') => {
@@ -106,7 +168,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
       <div className="w-full lg:w-[32%] bg-[#2E2247] rounded-[2rem] p-5 flex flex-col justify-between shadow-xl border border-[#5a4042]/20 relative overflow-hidden group">
         <div className="z-10 flex flex-col h-full justify-between items-center text-center p-2">
           <div className="w-full flex justify-between items-center mb-3">
-            <span className="material-symbols-outlined text-[#e2bec0]">queue_music</span>
+            <span className="material-symbols-outlined text-[#e2bec0]/50 cursor-not-allowed">queue_music</span>
             <span className="font-label-caps text-[10px] text-[#e2bec0]/50 uppercase tracking-widest bg-[#201439] px-3 py-1 rounded-full border border-[#5a4042]/30">
               Sin Música
             </span>
@@ -146,7 +208,13 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
 
       <div className="z-10 flex flex-col h-full justify-between items-center text-center p-2">
         <div className="w-full flex justify-between items-center mb-3">
-          <span className="material-symbols-outlined text-[#e2bec0]">queue_music</span>
+          <button 
+            onClick={musicState.isPlaylist ? handleNextTrack : undefined}
+            className={`material-symbols-outlined transition-colors ${musicState.isPlaylist ? 'text-[#7adaa1] hover:text-white cursor-pointer active:scale-95' : 'text-[#e2bec0]/50 cursor-not-allowed'}`}
+            title={musicState.isPlaylist ? "Siguiente canción" : "No es una playlist"}
+          >
+            queue_music
+          </button>
           <span className="font-label-caps text-[10px] text-[#7adaa1] uppercase tracking-widest bg-[#7adaa1]/10 px-3 py-1 rounded-full border border-[#7adaa1]/20">
             {musicState.isPlaying ? 'Now Playing 🎵' : 'Paused'}
           </span>
@@ -160,7 +228,12 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
             opts={{
               width: '100%',
               height: '100%',
-              playerVars: { autoplay: 1, controls: 0, disablekb: 1 },
+              playerVars: { 
+                autoplay: 1, 
+                controls: 0, 
+                disablekb: 1,
+                ...(musicState.isPlaylist ? { listType: 'playlist', list: musicState.playlistId } : {})
+              },
             }}
             onReady={(e) => {
               playerRef.current = e.target;
@@ -188,16 +261,34 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
         </div>
 
         {/* Controls */}
-        <div className="flex items-center justify-center gap-6 w-full bg-[#221934]/60 py-2.5 px-4 rounded-full backdrop-blur-sm border border-[#5a4042]/20 mb-3">
-          <button 
-            onClick={musicState.isPlaying ? handlePause : handlePlay}
-            aria-label={musicState.isPlaying ? "Pause" : "Play"}
-            className="w-13 h-13 p-3 bg-[#ff5470] text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-[0_4px_16px_rgba(255,84,112,0.5)]"
-          >
-            <span className="material-symbols-outlined text-2xl">
-              {musicState.isPlaying ? 'pause' : 'play_arrow'}
-            </span>
-          </button>
+        <div className="flex flex-col w-full gap-3 mb-3">
+          <div className="flex items-center justify-center gap-6 w-full bg-[#221934]/60 py-2.5 px-4 rounded-full backdrop-blur-sm border border-[#5a4042]/20">
+            <button 
+              onClick={musicState.isPlaying ? handlePause : handlePlay}
+              aria-label={musicState.isPlaying ? "Pause" : "Play"}
+              className="w-13 h-13 p-3 bg-[#ff5470] text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-[0_4px_16px_rgba(255,84,112,0.5)]"
+            >
+              <span className="material-symbols-outlined text-2xl">
+                {musicState.isPlaying ? 'pause' : 'play_arrow'}
+              </span>
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-2 px-2">
+            <span className="material-symbols-outlined text-[#e2bec0]/70 text-sm">volume_down</span>
+            <input 
+              type="range" 
+              min="0" max="100" 
+              value={localVolume}
+              onChange={(e) => {
+                const vol = parseInt(e.target.value, 10);
+                setLocalVolume(vol);
+                localStorage.setItem('ourlobby_music_volume', vol.toString());
+              }}
+              className="flex-1 h-1.5 bg-[#201439] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-[#7adaa1] [&::-webkit-slider-thumb]:rounded-full"
+            />
+            <span className="material-symbols-outlined text-[#e2bec0]/70 text-sm">volume_up</span>
+          </div>
         </div>
 
         <form onSubmit={handleSetSong} className="flex gap-2 w-full">

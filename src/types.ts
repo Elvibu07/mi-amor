@@ -176,6 +176,9 @@ export interface MusicState {
   timestamp: number;
   updatedAt: number; // to calculate offset
   setBy: 'Sapo' | 'Mi Rey';
+  isPlaylist?: boolean;
+  playlistId?: string;
+  playlistIndex?: number;
 }
 
 /** A synchronised movie-night countdown session */
@@ -192,4 +195,10 @@ export interface SpecialDatesConfig {
   sapoBirthday: string;      // ISO: "2005-06-07"
   miReyBirthday: string;     // ISO: "2001-03-28"
   reunionDate?: string;      // ISO: upcoming reunion
+}
+
+/** Love Event for sending affection */
+export interface LoveEvent {
+  timestamp: number;
+  sender: 'Sapo' | 'Mi Rey';
 }

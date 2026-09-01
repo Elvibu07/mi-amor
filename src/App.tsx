@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ViewType, UserProfile, MemoryItem, NoteItem, MissionItem, AchievementItem,
-  GameScore, GoalItem, CouponItem, LetterItem, MovieItem, SeriesItem,
+  GameScore, GoalItem, CouponItem, LetterItem, MovieItem, SeriesItem, LoveEvent,
 } from './types';
 import {
   initialProfiles, initialMemories, initialNotes, initialMissions,
@@ -83,6 +83,18 @@ export default function App() {
 
   // ── 7. Series State (NEW) ───────────────────────────────────────────────────
   const [series, addSeries, updateSeries, removeSeries] = useSyncedCollection<SeriesItem>('series', 'ourlobby_series', []);
+
+  // ── Love Event Sync ────────────────────────────────────────────────────────
+  const [loveEvent, setLoveEvent] = useSyncedDoc<LoveEvent | null>('shared', 'love_event', 'ourlobby_love', null);
+
+  useEffect(() => {
+    if (loveEvent && currentUser && loveEvent.sender !== currentUser) {
+      if (Date.now() - loveEvent.timestamp < 10000) { // Recent event
+        playHeartSound();
+        confetti({ particleCount: 60, spread: 70, origin: { y: 0.5 }, colors: ['#ff5470', '#fabc41', '#7adaa1', '#ffb2b8'] });
+      }
+    }
+  }, [loveEvent?.timestamp]);
 
   // ── Days to reunion ────────────────────────────────────────────────────────
   const [daysToReunion, setDaysToReunion] = useState<number>(() => {
@@ -171,6 +183,12 @@ export default function App() {
   const handleSendLove = () => {
     playHeartSound();
     confetti({ particleCount: 60, spread: 70, origin: { y: 0.5 }, colors: ['#ff5470', '#fabc41', '#7adaa1', '#ffb2b8'] });
+    if (currentUser) {
+      setLoveEvent({
+        timestamp: Date.now(),
+        sender: currentUser,
+      });
+    }
   };
 
   const handleUpdateScore = (winner: 'Sapo' | 'Mi Rey') =>
