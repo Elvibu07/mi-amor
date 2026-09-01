@@ -194,6 +194,19 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5">
+                          {onDeleteNote && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm('¿Seguro que deseas eliminar esta misión?')) {
+                                  onDeleteNote(note.id);
+                                }
+                              }}
+                              className="text-[#e2bec0]/50 hover:text-[#ff5470] hover:scale-110 transition-all p-1 rounded-full hover:bg-white/5"
+                              title="Eliminar misión"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          )}
                           <img
                             alt={note.author}
                             className="w-6 h-6 rounded-full border border-[#ffb2b8] opacity-85 object-cover"
@@ -255,9 +268,24 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                           <span className="font-label-mono text-[10px] uppercase text-[#6FCF97] font-bold tracking-wider flex items-center gap-1">
                             <span className="material-symbols-outlined text-[12px]">done_all</span> Resuelta
                           </span>
-                          <span className="text-[10px] text-[#e2bec0]/70 font-label-mono uppercase">
-                            {note.author === 'Sapo' ? sapoProfile.name : miReyProfile.name}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {onDeleteNote && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm('¿Seguro que deseas eliminar esta misión?')) {
+                                    onDeleteNote(note.id);
+                                  }
+                                }}
+                                className="text-[#e2bec0]/50 hover:text-[#ff5470] hover:scale-110 transition-all p-1 rounded-full hover:bg-white/5 -mt-1"
+                                title="Eliminar misión"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">delete</span>
+                              </button>
+                            )}
+                            <span className="text-[10px] text-[#e2bec0]/70 font-label-mono uppercase">
+                              {note.author === 'Sapo' ? sapoProfile.name : miReyProfile.name}
+                            </span>
+                          </div>
                         </div>
                         <p className="font-body-md text-[#eaddff]/80 text-center my-3 text-sm line-through decoration-[#FF5470]/50">
                           {note.text}
