@@ -160,6 +160,21 @@ export default function App() {
           notifyButton: {
             enable: false,
           },
+          promptOptions: {
+            slidedown: {
+              prompts: [
+                {
+                  type: 'push',
+                  autoPrompt: true,
+                  text: {
+                    actionMessage: 'Acepta para poder vigilarte... 👀 mentira, es para que estés al tanto de todo. ¡Te amo! 💕',
+                    acceptButton: 'Obvio que sí 💖',
+                    cancelButton: 'Ahora no',
+                  },
+                },
+              ],
+            },
+          },
         });
         OneSignal.Slidedown.promptPush();
       } catch (e) {
