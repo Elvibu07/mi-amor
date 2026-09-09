@@ -201,8 +201,19 @@ export default function App() {
   };
 
   // ── Handlers: Coupons ──────────────────────────────────────────────────────
-  const handleAddCoupon = addCoupon;
-  const handleRedeemCoupon = (id: string) => updateCoupon(id, { isRedeemed: true, redeemedAt: `Canjeado el ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ✨` });
+  const handleAddCoupon = (coupon: CouponItem) => {
+    addCoupon(coupon);
+    const targetUser = coupon.to === 'Baby' ? 'Baby' : 'Mi Rey';
+    sendNotificationToUser(targetUser, '🎟️ Nuevo Boleto', `${coupon.from} te ha regalado un boleto: "${coupon.title}".`);
+  };
+  const handleRedeemCoupon = (id: string) => {
+    const c = coupons.find(x => x.id === id);
+    updateCoupon(id, { isRedeemed: true, redeemedAt: `Canjeado el ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ✨` });
+    if (c) {
+      const targetUser = c.from === 'Baby' ? 'Baby' : 'Mi Rey';
+      sendNotificationToUser(targetUser, '🎟️ ¡Boleto Canjeado!', `${c.to} ha canjeado tu boleto: "${c.title}".`);
+    }
+  };
   const handleUnredeemCoupon = (id: string) => updateCoupon(id, { isRedeemed: false, redeemedAt: undefined });
 
   // ── Handlers: Missions ─────────────────────────────────────────────────────
@@ -225,12 +236,20 @@ export default function App() {
   const handleMarkLetterRead = (id: string) => updateLetter(id, { isRead: true });
 
   // ── Handlers: Movies (NEW) ─────────────────────────────────────────────────
-  const handleAddMovie = addMovie;
+  const handleAddMovie = (movie: MovieItem) => {
+    addMovie(movie);
+    const targetUser = currentUser === 'Baby' ? 'Mi Rey' : 'Baby';
+    sendNotificationToUser(targetUser, '🎬 Nueva Película', `${currentUser} ha agregado "${movie.title}" a la lista.`);
+  };
   const handleUpdateMovie = updateMovie;
   const handleDeleteMovie = removeMovie;
 
   // ── Handlers: Series (NEW) ─────────────────────────────────────────────────
-  const handleAddSeries = addSeries;
+  const handleAddSeries = (series: SeriesItem) => {
+    addSeries(series);
+    const targetUser = currentUser === 'Baby' ? 'Mi Rey' : 'Baby';
+    sendNotificationToUser(targetUser, '📺 Nueva Serie', `${currentUser} ha agregado "${series.title}" a la lista.`);
+  };
   const handleUpdateSeries = updateSeries;
   const handleDeleteSeries = removeSeries;
 
