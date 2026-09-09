@@ -8,10 +8,10 @@ interface MuroNotasViewProps {
   onAddNote: (note: NoteItem) => void;
   onToggleFavorite: (id: string) => void;
   onDeleteNote?: (id: string) => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
   daysToReunion: number;
-  currentUser?: 'Sapo' | 'Mi Rey' | null;
+  currentUser?: 'Baby' | 'Mi Rey' | null;
 }
 
 export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
@@ -19,7 +19,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
   onAddNote,
   onToggleFavorite,
   onDeleteNote,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
   daysToReunion,
   currentUser,
@@ -49,7 +49,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
 
   // New Note state
   const [newNoteText, setNewNoteText] = useState('');
-  const [newAuthor, setNewAuthor] = useState<'Sapo' | 'Mi Rey'>('Sapo');
+  const [newAuthor, setNewAuthor] = useState<'Baby' | 'Mi Rey'>('Baby');
   const [newUrgency, setNewUrgency] = useState<'calma' | 'importante' | 'urgente'>('importante');
 
   const filteredNotes = notes.filter((n) => n.category === activeCategory);
@@ -210,10 +210,10 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                           <img
                             alt={note.author}
                             className="w-6 h-6 rounded-full border border-[#ffb2b8] opacity-85 object-cover"
-                            src={note.author === 'Sapo' ? sapoProfile.avatar : miReyProfile.avatar}
+                            src={note.author === 'Baby' ? babyProfile.avatar : miReyProfile.avatar}
                           />
                           <span className="text-[11px] text-[#e2bec0] font-label-mono uppercase">
-                            {note.author === 'Sapo' ? sapoProfile.name : miReyProfile.name}
+                            {note.author === 'Baby' ? babyProfile.name : miReyProfile.name}
                           </span>
                         </div>
                       </div>
@@ -283,7 +283,7 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                               </button>
                             )}
                             <span className="text-[10px] text-[#e2bec0]/70 font-label-mono uppercase">
-                              {note.author === 'Sapo' ? sapoProfile.name : miReyProfile.name}
+                              {note.author === 'Baby' ? babyProfile.name : miReyProfile.name}
                             </span>
                           </div>
                         </div>
@@ -464,14 +464,14 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                     <div className="flex items-center gap-3">
                       <img
                         alt={note.author}
-                        src={note.author === 'Sapo' ? sapoProfile.avatar : miReyProfile.avatar}
+                        src={note.author === 'Baby' ? babyProfile.avatar : miReyProfile.avatar}
                         className={`w-8 h-8 rounded-full object-cover shadow-sm bg-[#3a2e54] border ${
-                          note.author === 'Sapo' ? 'border-[#7adaa1]' : 'border-[#fabc41]'
+                          note.author === 'Baby' ? 'border-[#7adaa1]' : 'border-[#fabc41]'
                         }`}
                       />
                       <div className="flex flex-col">
                         <span className="font-label-caps text-xs text-white tracking-wider uppercase font-bold">
-                          {note.author === 'Sapo' ? sapoProfile.name : miReyProfile.name}
+                          {note.author === 'Baby' ? babyProfile.name : miReyProfile.name}
                         </span>
                         <span className="font-label-mono text-[10px] text-[#e2bec0]/70">
                           {formatDate(note.dateStr)}
@@ -630,21 +630,21 @@ export const MuroNotasView: React.FC<MuroNotasViewProps> = ({
                   <div className="flex gap-3">
                     <button
                       type="button"
-                      onClick={() => setNewAuthor('Sapo')}
+                      onClick={() => setNewAuthor('Baby')}
                       className={`flex-1 flex items-center gap-3 p-3 rounded-2xl border transition-all ${
-                        newAuthor === 'Sapo'
+                        newAuthor === 'Baby'
                           ? 'bg-[#201439] border-[#6FCF97] shadow-[0_0_12px_rgba(111,207,151,0.3)] ring-1 ring-[#6FCF97]'
                           : 'bg-[#201439]/50 border-transparent opacity-60'
                       }`}
                     >
                       <img
-                        alt="Sapo"
-                        src={sapoProfile.avatar}
+                        alt="Baby"
+                        src={babyProfile.avatar}
                         className="w-8 h-8 rounded-full object-cover border border-[#6FCF97]"
                       />
                       <div className="text-left">
-                        <span className="text-xs font-bold text-white block">{sapoProfile.name} </span>
-                        <span className="text-[10px] text-[#6FCF97] font-label-mono">{sapoProfile.city}</span>
+                        <span className="text-xs font-bold text-white block">{babyProfile.name} </span>
+                        <span className="text-[10px] text-[#6FCF97] font-label-mono">{babyProfile.city}</span>
                       </div>
                     </button>
 

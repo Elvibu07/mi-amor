@@ -25,6 +25,8 @@ import { SettingsView } from './components/SettingsView';
 import { MiniMusicPlayer } from './components/MiniMusicPlayer';
 import confetti from 'canvas-confetti';
 import { playHeartSound } from './utils/audio';
+import OneSignal from 'react-onesignal';
+import { sendNotificationToUser } from './lib/notifications';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function loadFromStorage<T>(key: string, fallback: T): T {
@@ -45,16 +47,16 @@ function saveToStorage<T>(key: string, value: T) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── Session ────────────────────────────────────────────────────────────────
-  const [currentUser, setCurrentUser] = useState<'Sapo' | 'Mi Rey' | null>(() => {
+  const [currentUser, setCurrentUser] = useState<'Baby' | 'Mi Rey' | null>(() => {
     const saved = sessionStorage.getItem('ourlobby_session');
-    return saved as 'Sapo' | 'Mi Rey' | null;
+    return saved as 'Baby' | 'Mi Rey' | null;
   });
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   const [currentView, setCurrentView] = useState<ViewType>('lobby');
 
   // ── Profiles ───────────────────────────────────────────────────────────────
-  const [sapoProfile, setSapoProfile] = useSyncedDoc<UserProfile>('shared', 'sapo_profile', 'ourlobby_profile_sapo', initialProfiles.sapo);
+  const [babyProfile, setBabyProfile] = useSyncedDoc<UserProfile>('shared', 'baby_profile', 'ourlobby_profile_baby', initialProfiles.baby);
   const [miReyProfile, setMiReyProfile] = useSyncedDoc<UserProfile>('shared', 'mirey_profile', 'ourlobby_profile_mirey', initialProfiles.miRey);
 
   // ── Memories ───────────────────────────────────────────────────────────────
@@ -94,7 +96,7 @@ export default function App() {
         playHeartSound();
         confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, colors: ['#ff5470', '#fabc41', '#7adaa1', '#ffb2b8', '#a78bfa'] });
         
-        const senderName = loveEvent.sender === 'Sapo' ? sapoProfile.name : miReyProfile.name;
+        const senderName = loveEvent.sender === 'Baby' ? babyProfile.name : miReyProfile.name;
         const receiverMessages = [
           `${senderName} te ha enviado muchos besos`,
           `${senderName} está pensando en ti`,
@@ -126,19 +128,19 @@ export default function App() {
     const updateTimes = () => {
       const now = new Date();
       // Use the timezone stored in each profile (updates when they travel)
-      const sapoTz = sapoProfile.timezone?.startsWith('America/') || sapoProfile.timezone?.startsWith('Europe/') || sapoProfile.timezone?.startsWith('Asia/')
-        ? sapoProfile.timezone
+      const babyTz = babyProfile.timezone?.startsWith('America/') || babyProfile.timezone?.startsWith('Europe/') || babyProfile.timezone?.startsWith('Asia/')
+        ? babyProfile.timezone
         : 'America/Guayaquil';
       const miReyTz = miReyProfile.timezone?.startsWith('America/') || miReyProfile.timezone?.startsWith('Europe/') || miReyProfile.timezone?.startsWith('Asia/')
         ? miReyProfile.timezone
         : 'America/Argentina/Buenos_Aires';
-      setGyeTime(now.toLocaleTimeString('es-EC', { timeZone: sapoTz, hour: '2-digit', minute: '2-digit', hour12: false }));
+      setGyeTime(now.toLocaleTimeString('es-EC', { timeZone: babyTz, hour: '2-digit', minute: '2-digit', hour12: false }));
       setArgTime(now.toLocaleTimeString('es-ES', { timeZone: miReyTz, hour: '2-digit', minute: '2-digit', hour12: false }));
     };
     updateTimes();
     const id = setInterval(updateTimes, 1000);
     return () => clearInterval(id);
-  }, [sapoProfile.timezone, miReyProfile.timezone]);
+  }, [babyProfile.timezone, miReyProfile.timezone]);
 
   // ── Persist to localStorage (Only daysToReunion since others use Firebase hooks) ────────────────────────────────────────────────
   useEffect(() => { localStorage.setItem('ourlobby_reunion_days', daysToReunion.toString()); }, [daysToReunion]);
@@ -149,11 +151,43 @@ export default function App() {
     else sessionStorage.removeItem('ourlobby_session');
   }, [currentUser]);
 
-  // ── Handlers: Memories ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const initOneSignal = async () => {
+      try {
+        await OneSignal.init({
+          appId: import.meta.env.VITE_ONESIGNAL_APP_ID || '',
+          allowLocalhostAsSecureOrigin: true,
+          notifyButton: {
+            enable: false,
+          },
+        });
+        OneSignal.Slidedown.promptPush();
+      } catch (e) {
+        console.warn('OneSignal initialization failed:', e);
+      }
+    };
+    if (import.meta.env.VITE_ONESIGNAL_APP_ID) {
+      initOneSignal();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      OneSignal.login(currentUser).catch(e => console.warn('OneSignal login failed:', e));
+    } else {
+      OneSignal.logout().catch(e => console.warn('OneSignal logout failed:', e));
+    }
+  }, [currentUser]);
+
+  // ── Data: Profiles ─────────────────────────────────────────────────────────
   const handleAddMemory = addMemory;
 
   // ── Handlers: Notes ────────────────────────────────────────────────────────
-  const handleAddNote = addNote;
+  const handleAddNote = (note: NoteItem) => {
+    addNote(note);
+    const targetUser = note.author === 'Baby' ? 'Mi Rey' : 'Baby';
+    sendNotificationToUser(targetUser, 'Nueva Nota 📝', `${note.author} dejó una nota en el Lobby.`);
+  };
   const handleToggleFavoriteNote = (id: string) => {
     const n = notes.find(x => x.id === id);
     if (n) updateNote(id, { isFavorite: !n.isFavorite });
@@ -172,14 +206,22 @@ export default function App() {
   const handleUnredeemCoupon = (id: string) => updateCoupon(id, { isRedeemed: false, redeemedAt: undefined });
 
   // ── Handlers: Missions ─────────────────────────────────────────────────────
-  const handleAddMission = addMission;
+  const handleAddMission = (mission: MissionItem) => {
+    addMission(mission);
+    const targetUser = mission.author === 'Baby' ? 'Mi Rey' : 'Baby';
+    sendNotificationToUser(targetUser, 'Nueva Misión ⚔️', `${mission.author} ha añadido una nueva misión. ¡Prepárate!`);
+  };
   const handleCompleteMission = (id: string) => {
     updateMission(id, { isCompleted: true, progress: 100 });
     confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
   };
 
   // ── Handlers: Letters (NEW) ────────────────────────────────────────────────
-  const handleAddLetter = addLetter;
+  const handleAddLetter = (letter: LetterItem) => {
+    addLetter(letter);
+    const targetUser = letter.to === 'Baby' ? 'Baby' : 'Mi Rey';
+    sendNotificationToUser(targetUser, '💌 Carta Nueva', `Tienes una nueva carta sin abrir de ${letter.from}.`);
+  };
   const handleMarkLetterRead = (id: string) => updateLetter(id, { isRead: true });
 
   // ── Handlers: Movies (NEW) ─────────────────────────────────────────────────
@@ -203,7 +245,10 @@ export default function App() {
         sender: currentUser,
       });
 
-      const receiverName = currentUser === 'Sapo' ? miReyProfile.name : sapoProfile.name;
+      const targetUser = currentUser === 'Baby' ? 'Mi Rey' : 'Baby';
+      sendNotificationToUser(targetUser, '¡Cariño Recibido! ❤️', `${currentUser} te ha enviado besos desde el Lobby.`);
+
+      const receiverName = currentUser === 'Baby' ? miReyProfile.name : babyProfile.name;
       const senderMessages = [
         `Cariño enviado a ${receiverName} ❤️`,
         `Besos volando hacia ${receiverName} ✨`,
@@ -216,14 +261,14 @@ export default function App() {
     }
   };
 
-  const handleUpdateScore = (winner: 'Sapo' | 'Mi Rey') =>
+  const handleUpdateScore = (winner: 'Baby' | 'Mi Rey') =>
     setGameScore((p) => ({
-      victoriasGYE: winner === 'Sapo' ? p.victoriasGYE + 1 : p.victoriasGYE,
+      victoriasGYE: winner === 'Baby' ? p.victoriasGYE + 1 : p.victoriasGYE,
       victoriasMAD: winner === 'Mi Rey' ? p.victoriasMAD + 1 : p.victoriasMAD,
     }));
 
   // ── Session: Login / Logout ────────────────────────────────────────────────
-  const handleLogin = (user: 'Sapo' | 'Mi Rey') => setCurrentUser(user);
+  const handleLogin = (user: 'Baby' | 'Mi Rey') => setCurrentUser(user);
   const handleLogout = () => setCurrentUser(null);
 
   // ── Derived ────────────────────────────────────────────────────────────────
@@ -240,7 +285,7 @@ export default function App() {
   if (!currentUser) {
     return (
       <LoginView
-        sapoProfile={sapoProfile}
+        babyProfile={babyProfile}
         miReyProfile={miReyProfile}
         onLogin={handleLogin}
       />
@@ -254,7 +299,7 @@ export default function App() {
       <Navigation
         currentView={currentView}
         onNavigate={navigate}
-        sapoProfile={sapoProfile}
+        babyProfile={babyProfile}
         miReyProfile={miReyProfile}
         gyeTime={gyeTime}
         argTime={argTime}
@@ -268,7 +313,7 @@ export default function App() {
       {currentView !== 'lobby' && (
         <MiniMusicPlayer
           currentUser={currentUser}
-          sapoProfile={sapoProfile}
+          babyProfile={babyProfile}
           miReyProfile={miReyProfile}
         />
       )}
@@ -279,7 +324,7 @@ export default function App() {
         <div className={currentView === 'lobby' ? '' : 'hidden'}>
           <LobbyView
             onNavigate={navigate}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
             gyeTime={gyeTime}
             argTime={argTime}
@@ -296,7 +341,7 @@ export default function App() {
             onAddMemory={handleAddMemory}
             onDeleteMemory={deleteMemory}
             onUpdateMemory={updateMemory}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
           />
         )}
@@ -307,7 +352,7 @@ export default function App() {
             onAddNote={handleAddNote}
             onToggleFavorite={handleToggleFavoriteNote}
             onDeleteNote={removeNote}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
             daysToReunion={daysToReunion}
             currentUser={currentUser}
@@ -323,7 +368,7 @@ export default function App() {
             onAddCoupon={handleAddCoupon}
             onRedeemCoupon={handleRedeemCoupon}
             onUnredeemCoupon={handleUnredeemCoupon}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
           />
         )}
@@ -332,7 +377,7 @@ export default function App() {
           <FechasEspecialesView
             daysToReunion={daysToReunion}
             onUpdateDays={setDaysToReunion}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
             gyeTime={gyeTime}
             argTime={argTime}
@@ -345,7 +390,7 @@ export default function App() {
             onAddLetter={handleAddLetter}
             onMarkRead={handleMarkLetterRead}
             currentUser={currentUser}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
           />
         )}
@@ -361,7 +406,7 @@ export default function App() {
             onUpdateSeries={handleUpdateSeries}
             onDeleteSeries={handleDeleteSeries}
             currentUser={currentUser}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
           />
         )}
@@ -370,7 +415,7 @@ export default function App() {
           <SalonJuegosView
             onSelectGame={(game) => { setCurrentView(game); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             gameScore={gameScore}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
           />
         )}
@@ -378,19 +423,19 @@ export default function App() {
         {currentView === 'tictactoe' && (
           <TicTacToeGame
             onBack={() => setCurrentView('juegos')}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
             onUpdateScore={handleUpdateScore}
-            currentUser={currentUser || 'Sapo'}
+            currentUser={currentUser || 'Baby'}
           />
         )}
 
         {currentView === 'sopa-letras' && (
           <WordSearchGame
             onBack={() => setCurrentView('juegos')}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
-            currentUser={currentUser || 'Sapo'}
+            currentUser={currentUser || 'Baby'}
             onUpdateScore={handleUpdateScore}
           />
         )}
@@ -398,19 +443,19 @@ export default function App() {
         {currentView === 'battleship' && (
           <BattleshipGame
             onBack={() => setCurrentView('juegos')}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
             onUpdateScore={handleUpdateScore}
-            currentUser={currentUser || 'Sapo'}
+            currentUser={currentUser || 'Baby'}
           />
         )}
 
         {currentView === 'settings' && (
           <SettingsView
             currentUser={currentUser}
-            sapoProfile={sapoProfile}
+            babyProfile={babyProfile}
             miReyProfile={miReyProfile}
-            onUpdateSapoProfile={setSapoProfile}
+            onUpdateBabyProfile={setBabyProfile}
             onUpdateMiReyProfile={setMiReyProfile}
             onBackToLobby={() => setCurrentView('lobby')}
           />
@@ -463,7 +508,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-[#ffb2b8]">
             <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
-            <span className="font-headline-md tracking-tight text-white">{sapoProfile.name} & {miReyProfile.name}</span>
+            <span className="font-headline-md tracking-tight text-white">{babyProfile.name} & {miReyProfile.name}</span>
           </div>
           <p className="font-body-md text-xs text-[#e2bec0]/70 text-center">
             Tu santuario privado desde 2026

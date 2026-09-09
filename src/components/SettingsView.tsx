@@ -5,10 +5,10 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../lib/firebase';
 
 interface SettingsViewProps {
-  currentUser: 'Sapo' | 'Mi Rey';
-  sapoProfile: UserProfile;
+  currentUser: 'Baby' | 'Mi Rey';
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
-  onUpdateSapoProfile: (profile: UserProfile) => void;
+  onUpdateBabyProfile: (profile: UserProfile) => void;
   onUpdateMiReyProfile: (profile: UserProfile) => void;
   onBackToLobby: () => void;
 }
@@ -449,9 +449,9 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji = '', accent
 // ── Main Settings View ─────────────────────────────────────────────────────────
 export const SettingsView: React.FC<SettingsViewProps> = ({
   currentUser,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
-  onUpdateSapoProfile,
+  onUpdateBabyProfile,
   onUpdateMiReyProfile,
   onBackToLobby,
 }) => {
@@ -477,14 +477,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         {/* Profile card (Only show current user) */}
         <div className="w-full max-w-2xl mx-auto">
-          {currentUser === 'Sapo' ? (
+          {currentUser === 'Baby' ? (
             <ProfileEditor
-              label={sapoProfile.name}
+              label={babyProfile.name}
               
               accentColor="#7adaa1"
-              profile={sapoProfile}
+              profile={babyProfile}
               otherProfilePin={miReyProfile.pin || '0000'}
-              onSave={onUpdateSapoProfile}
+              onSave={onUpdateBabyProfile}
             />
           ) : (
             <ProfileEditor
@@ -492,7 +492,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               emoji=""
               accentColor="#fabc41"
               profile={miReyProfile}
-              otherProfilePin={sapoProfile.pin || '1111'}
+              otherProfilePin={babyProfile.pin || '1111'}
               onSave={onUpdateMiReyProfile}
             />
           )}

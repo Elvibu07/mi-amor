@@ -5,10 +5,10 @@ import { useSyncedDoc } from '../lib/useFirestore';
 
 interface WordSearchGameProps {
   onBack: () => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
-  currentUser: 'Sapo' | 'Mi Rey';
-  onUpdateScore: (winner: 'Sapo' | 'Mi Rey') => void;
+  currentUser: 'Baby' | 'Mi Rey';
+  onUpdateScore: (winner: 'Baby' | 'Mi Rey') => void;
 }
 
 interface WordLocation {
@@ -19,7 +19,7 @@ interface WordLocation {
 
 interface FoundWordInfo {
   word: string;
-  foundBy: 'Sapo' | 'Mi Rey';
+  foundBy: 'Baby' | 'Mi Rey';
 }
 
 interface WordSearchSyncState {
@@ -27,11 +27,11 @@ interface WordSearchSyncState {
   words: WordLocation[];
   foundWords: FoundWordInfo[];
   gameActive: boolean;
-  winner: 'Sapo' | 'Mi Rey' | 'Empate' | null;
+  winner: 'Baby' | 'Mi Rey' | 'Empate' | null;
 }
 
 const ROMANTIC_WORDS = [
-  'AMOR', 'SAPO', 'REY', 'JUNTOS', 'SIEMPRE', 'TEAMO', 'BESO', 'ABRAZO',
+  'AMOR', 'BABY', 'REY', 'JUNTOS', 'SIEMPRE', 'TEAMO', 'BESO', 'ABRAZO',
   'NOVIOS', 'CORAZON', 'DULCE', 'CARINO', 'MIMOS', 'FECHAS', 'LOBBY',
   'DISTANCIA', 'CARTAS', 'SUEÑOS', 'VIDA', 'CIELO', 'ESTRELLA', 'MAGIA',
   'LOCO', 'FLOR', 'SOL', 'LUNA', 'ANHELO', 'ILUSION', 'ETERNO', 'PASION'
@@ -130,7 +130,7 @@ const defaultState: WordSearchSyncState = {
 
 export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   onBack,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
   currentUser,
   onUpdateScore,
@@ -146,7 +146,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   const [selectedCells, setSelectedCells] = useState<{ row: number; col: number }[]>([]);
   const [activeHint, setActiveHint] = useState<string | null>(null);
 
-  const sapoScore = foundWords.filter(w => w.foundBy === 'Sapo').length;
+  const babyScore = foundWords.filter(w => w.foundBy === 'Baby').length;
   const miReyScore = foundWords.filter(w => w.foundBy === 'Mi Rey').length;
 
   const isCellSelected = (r: number, c: number) => {
@@ -154,7 +154,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
   };
 
   // Find who found a given cell
-  const getCellFoundBy = (r: number, c: number): 'Sapo' | 'Mi Rey' | null => {
+  const getCellFoundBy = (r: number, c: number): 'Baby' | 'Mi Rey' | null => {
     for (const w of words) {
       const foundInfo = foundWords.find(f => f.word === w.word);
       if (foundInfo && w.coords.some(coord => coord.row === r && coord.col === c)) {
@@ -204,12 +204,12 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
             playHeartSound();
             active = false;
             // Calculate who found more words
-            const finalSapoScore = updatedFoundWords.filter(f => f.foundBy === 'Sapo').length;
+            const finalBabyScore = updatedFoundWords.filter(f => f.foundBy === 'Baby').length;
             const finalMiReyScore = updatedFoundWords.filter(f => f.foundBy === 'Mi Rey').length;
             
-            if (finalSapoScore > finalMiReyScore) {
-              gameWinner = 'Sapo' as const;
-            } else if (finalMiReyScore > finalSapoScore) {
+            if (finalBabyScore > finalMiReyScore) {
+              gameWinner = 'Baby' as const;
+            } else if (finalMiReyScore > finalBabyScore) {
               gameWinner = 'Mi Rey' as const;
             } else {
               gameWinner = 'Empate' as const;
@@ -287,16 +287,16 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
           {/* Combined Progress Box */}
           <div className="bg-[#2f2348] p-4 rounded-2xl w-full md:w-auto min-w-[340px] shadow-xl border border-[#5a4042]/30 flex flex-col gap-3">
             <div className="flex justify-between items-center text-white">
-              {/* Sapo Score */}
+              {/* Baby Score */}
               <div className="flex items-center gap-2.5">
                 <img
-                  alt="Sapo"
-                  src={sapoProfile.avatar}
+                  alt="Baby"
+                  src={babyProfile.avatar}
                   className="w-10 h-10 rounded-full border-2 border-[#7adaa1] object-cover"
                 />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-[#7adaa1] uppercase font-bold tracking-wider">{sapoProfile.name}</span>
-                  <span className="text-xl font-bold">{sapoScore} <span className="text-xs text-[#e2bec0]/60">encontradas</span></span>
+                  <span className="text-[10px] text-[#7adaa1] uppercase font-bold tracking-wider">{babyProfile.name}</span>
+                  <span className="text-xl font-bold">{babyScore} <span className="text-xs text-[#e2bec0]/60">encontradas</span></span>
                 </div>
               </div>
 
@@ -333,7 +333,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
         {!gameActive && winner && (
           <div className="bg-[#7adaa1]/20 border-2 border-[#7adaa1] rounded-[2rem] p-6 text-center shadow-[0_0_30px_rgba(122,218,161,0.2)] animate-bounce">
             <h2 className="text-3xl sm:text-4xl font-display-lg text-[#7adaa1] font-bold mb-1">
-              {winner === 'Empate' ? '🤝 ¡Empate de velocidad! 🤝' : `🏆 ¡Ganador: ${winner === 'Sapo' ? sapoProfile.name : miReyProfile.name}! 🏆`}
+              {winner === 'Empate' ? '🤝 ¡Empate de velocidad! 🤝' : `🏆 ¡Ganador: ${winner === 'Baby' ? babyProfile.name : miReyProfile.name}! 🏆`}
             </h2>
             <p className="text-white text-sm font-label-mono uppercase tracking-wider">
               {winner === 'Empate' ? '¡Ambos encontraron la misma cantidad de palabras!' : '¡Fue más veloz encontrando las palabras de amor! 💖'}
@@ -364,7 +364,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                     key={index}
                     onClick={() => handleCellClick(r, c)}
                     className={`aspect-square flex items-center justify-center font-headline-md text-sm sm:text-base md:text-lg rounded-lg sm:rounded-xl cursor-pointer transition-all ${
-                      cellOwner === 'Sapo'
+                      cellOwner === 'Baby'
                         ? 'bg-[#7adaa1]/30 text-[#7adaa1] ring-2 ring-[#7adaa1] font-bold shadow-[0_0_12px_rgba(122,218,161,0.3)]'
                         : cellOwner === 'Mi Rey'
                         ? 'bg-[#fabc41]/30 text-[#fabc41] ring-2 ring-[#fabc41] font-bold shadow-[0_0_12px_rgba(250,188,65,0.3)]'
@@ -418,7 +418,7 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                       key={w.word}
                       className={`flex items-center justify-between p-2 rounded-xl transition-all ${
                         isFound 
-                          ? foundInfo.foundBy === 'Sapo' 
+                          ? foundInfo.foundBy === 'Baby' 
                             ? 'bg-[#7adaa1]/10 border border-[#7adaa1]/20'
                             : 'bg-[#fabc41]/10 border border-[#fabc41]/20'
                           : 'hover:bg-[#3a2e54]/50'
@@ -435,11 +435,11 @@ export const WordSearchGame: React.FC<WordSearchGameProps> = ({
                       </span>
                       {isFound ? (
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          foundInfo.foundBy === 'Sapo' 
+                          foundInfo.foundBy === 'Baby' 
                             ? 'bg-[#7adaa1]/20 text-[#7adaa1]'
                             : 'bg-[#fabc41]/20 text-[#fabc41]'
                         }`}>
-                          {foundInfo.foundBy === 'Sapo' ? sapoProfile.name : miReyProfile.name}
+                          {foundInfo.foundBy === 'Baby' ? babyProfile.name : miReyProfile.name}
                         </span>
                       ) : (
                         <span className="font-label-mono text-[10px] text-[#e2bec0]/70">

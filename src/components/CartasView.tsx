@@ -7,8 +7,8 @@ interface CartasViewProps {
   letters: LetterItem[];
   onAddLetter: (letter: LetterItem) => void;
   onMarkRead: (id: string) => void;
-  currentUser: 'Sapo' | 'Mi Rey';
-  sapoProfile: UserProfile;
+  currentUser: 'Baby' | 'Mi Rey';
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
 }
 
@@ -24,7 +24,7 @@ export const CartasView: React.FC<CartasViewProps> = ({
   onAddLetter,
   onMarkRead,
   currentUser,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
 }) => {
   const [composing, setComposing] = useState(false);
@@ -35,11 +35,11 @@ export const CartasView: React.FC<CartasViewProps> = ({
   const [animOpen, setAnimOpen] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
 
-  const otherUser = currentUser === 'Sapo' ? 'Mi Rey' : 'Sapo';
-  const otherProfile = currentUser === 'Sapo' ? miReyProfile : sapoProfile;
-  const myProfile = currentUser === 'Sapo' ? sapoProfile : miReyProfile;
+  const otherUser = currentUser === 'Baby' ? 'Mi Rey' : 'Baby';
+  const otherProfile = currentUser === 'Baby' ? miReyProfile : babyProfile;
+  const myProfile = currentUser === 'Baby' ? babyProfile : miReyProfile;
 
-  const getName = (role: 'Sapo' | 'Mi Rey') => role === 'Sapo' ? sapoProfile.name : miReyProfile.name;
+  const getName = (role: 'Baby' | 'Mi Rey') => role === 'Baby' ? babyProfile.name : miReyProfile.name;
 
   const unreadCount = letters.filter(
     (l) => l.to === currentUser && !l.isRead

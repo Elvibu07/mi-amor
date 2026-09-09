@@ -8,7 +8,7 @@ interface MisionesViewProps {
   achievements: AchievementItem[];
   onAddMission: (mission: MissionItem) => void;
   onCompleteMission: (id: string) => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
 }
 
@@ -17,13 +17,13 @@ export const MisionesView: React.FC<MisionesViewProps> = ({
   achievements,
   onAddMission,
   onCompleteMission,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [urgency, setUrgency] = useState<'calma' | 'importante' | 'urgente'>('importante');
-  const [author, setAuthor] = useState<'Sapo' | 'Mi Rey'>('Sapo');
+  const [author, setAuthor] = useState<'Baby' | 'Mi Rey'>('Baby');
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +108,7 @@ export const MisionesView: React.FC<MisionesViewProps> = ({
                       <img
                         alt={mis.author}
                         className="w-6 h-6 rounded-full border border-[#ffb2b8] opacity-85 object-cover"
-                        src={mis.author === 'Sapo' ? sapoProfile.avatar : miReyProfile.avatar}
+                        src={mis.author === 'Baby' ? babyProfile.avatar : miReyProfile.avatar}
                       />
                       <span className="text-[11px] text-[#e2bec0] font-label-mono uppercase">
                         {mis.author}
@@ -335,20 +335,20 @@ export const MisionesView: React.FC<MisionesViewProps> = ({
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => setAuthor('Sapo')}
+                    onClick={() => setAuthor('Baby')}
                     className={`flex-1 flex items-center gap-3 p-3 rounded-2xl border transition-all ${
-                      author === 'Sapo'
+                      author === 'Baby'
                         ? 'bg-[#201439] border-[#6FCF97] shadow-[0_0_12px_rgba(111,207,151,0.3)] ring-1 ring-[#6FCF97]'
                         : 'bg-[#201439]/50 border-transparent opacity-60'
                     }`}
                   >
                     <img
-                      alt="Sapo"
-                      src={sapoProfile.avatar}
+                      alt="Baby"
+                      src={babyProfile.avatar}
                       className="w-8 h-8 rounded-full object-cover border border-[#6FCF97]"
                     />
                     <div className="text-left">
-                      <span className="text-xs font-bold text-white block">{sapoProfile.name}</span>
+                      <span className="text-xs font-bold text-white block">{babyProfile.name}</span>
                       <span className="text-[10px] text-[#6FCF97] font-label-mono">Guayaquil</span>
                     </div>
                   </button>

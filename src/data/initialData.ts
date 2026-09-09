@@ -1,7 +1,7 @@
 import { MemoryItem, NoteItem, MissionItem, AchievementItem, UserProfile, GoalItem, CouponItem } from '../types';
 
-export const initialProfiles: { sapo: UserProfile; miRey: UserProfile } = {
-  sapo: {
+export const initialProfiles: { baby: UserProfile; miRey: UserProfile } = {
+  baby: {
     name: 'Elvia',
     avatar: 'https://lh3.googleusercontent.com/aida/AP1WRLutY3v06VYabEZxKTfmiqDRSrEppKQldLh7fY35h6SphIy1qfqKAT-g9T4D2kM0pwO0ZlCRLHyWm8DDKtQUywfaxR9VXrOZMAfgrARuXRkaZXSO3Q6zreBVpPj5HqKb0_WUnRn4fxhrOBZpHNIoCBP0SZWDCD3nl5ColREUs5V-OrOMpu5iZqQBdOtZle6SXEtEt90WA9JZS8Orcep4lkOMQ294C6RRxTJPaoFXzcfF2nwbjTwHeHamziM',
     city: 'Guayaquil',

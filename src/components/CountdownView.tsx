@@ -5,7 +5,7 @@ import { playCutePop } from '../utils/audio';
 interface CountdownViewProps {
   daysToReunion: number;
   onUpdateDays: (days: number) => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
   gyeTime: string;
   argTime: string;
@@ -14,7 +14,7 @@ interface CountdownViewProps {
 export const CountdownView: React.FC<CountdownViewProps> = ({
   daysToReunion,
   onUpdateDays,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
   gyeTime,
   argTime,

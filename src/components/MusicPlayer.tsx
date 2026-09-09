@@ -6,12 +6,12 @@ import { playCutePop } from '../utils/audio';
 import getYouTubeID from 'get-youtube-id';
 
 interface MusicPlayerProps {
-  currentUser: 'Sapo' | 'Mi Rey';
-  sapoProfile: UserProfile;
+  currentUser: 'Baby' | 'Mi Rey';
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
 }
 
-export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfile, miReyProfile }) => {
+export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, babyProfile, miReyProfile }) => {
   const [musicState, setMusicState] = useSyncedDoc<MusicState | null>('shared', 'music_state', 'ourlobby_music', null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [inputUrl, setInputUrl] = useState('');
@@ -158,8 +158,8 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentUser, sapoProfi
     }
   };
 
-  const getName = (role: 'Sapo' | 'Mi Rey') => {
-    return role === 'Sapo' ? sapoProfile.name : miReyProfile.name;
+  const getName = (role: 'Baby' | 'Mi Rey') => {
+    return role === 'Baby' ? babyProfile.name : miReyProfile.name;
   };
 
   // If there's no music state, show the empty card

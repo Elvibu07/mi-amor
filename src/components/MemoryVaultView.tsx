@@ -9,7 +9,7 @@ interface MemoryVaultViewProps {
   onAddMemory: (memory: MemoryItem) => void;
   onDeleteMemory: (id: string) => void;
   onUpdateMemory: (id: string, update: Partial<MemoryItem>) => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
 }
 
@@ -18,7 +18,7 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
   onAddMemory,
   onDeleteMemory,
   onUpdateMemory,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
 }) => {
   const [selectedMemory, setSelectedMemory] = useState<MemoryItem | null>(null);
@@ -46,7 +46,7 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
   const [newLocation, setNewLocation] = useState('Guayaquil');
   const [newDate, setNewDate] = useState('Hoy');
   const [newImageUrl, setNewImageUrl] = useState('');
-  const [newCapturedBy, setNewCapturedBy] = useState<'Sapo' | 'Mi Rey' | 'Together'>('Sapo');
+  const [newCapturedBy, setNewCapturedBy] = useState<'Baby' | 'Mi Rey' | 'Together'>('Baby');
 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -180,8 +180,8 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
                   {mem.capturedBy === 'Together' ? (
                     <div className="flex -space-x-2">
                       <img
-                        alt="Sapo"
-                        src={sapoProfile.avatar}
+                        alt="Baby"
+                        src={babyProfile.avatar}
                         className="w-6 h-6 rounded-full border border-[#7adaa1]"
                       />
                       <img
@@ -193,12 +193,12 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
                   ) : (
                     <img
                       alt={mem.capturedBy}
-                      src={mem.capturedBy === 'Sapo' ? sapoProfile.avatar : miReyProfile.avatar}
-                      className={`w-6 h-6 rounded-full border ${mem.capturedBy === 'Sapo' ? 'border-[#7adaa1]' : 'border-[#fabc41]'}`}
+                      src={mem.capturedBy === 'Baby' ? babyProfile.avatar : miReyProfile.avatar}
+                      className={`w-6 h-6 rounded-full border ${mem.capturedBy === 'Baby' ? 'border-[#7adaa1]' : 'border-[#fabc41]'}`}
                     />
                   )}
                   <span className="text-[10px] text-[#3a2e54] font-label-mono uppercase font-bold tracking-wider">
-                    {mem.capturedBy === 'Together' ? 'Captured Together' : `Captured by ${mem.capturedBy === 'Sapo' ? sapoProfile.name : miReyProfile.name}`}
+                    {mem.capturedBy === 'Together' ? 'Captured Together' : `Captured by ${mem.capturedBy === 'Baby' ? babyProfile.name : miReyProfile.name}`}
                   </span>
                 </div>
               </div>
@@ -276,8 +276,8 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
               <span className="text-xs font-bold font-label-mono bg-rose-100 text-rose-800 px-3 py-1 rounded-full">
                 {selectedMemory.capturedBy === 'Together'
                   ? 'Ambos'
-                  : selectedMemory.capturedBy === 'Sapo'
-                  ? sapoProfile.name
+                  : selectedMemory.capturedBy === 'Baby'
+                  ? babyProfile.name
                   : miReyProfile.name}
               </span>
             </div>
@@ -412,14 +412,14 @@ service firebase.storage {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setNewCapturedBy('Sapo')}
+                    onClick={() => setNewCapturedBy('Baby')}
                     className={`flex-1 py-2 px-3 rounded-xl text-xs font-label-caps uppercase border transition-all ${
-                      newCapturedBy === 'Sapo'
+                      newCapturedBy === 'Baby'
                         ? 'bg-[#7adaa1] text-[#003920] border-[#7adaa1] font-bold shadow-md'
                         : 'border-[#5a4042]/40 text-[#e2bec0]'
                     }`}
                   >
-                    {sapoProfile.name} 
+                    {babyProfile.name} 
                   </button>
                   <button
                     type="button"

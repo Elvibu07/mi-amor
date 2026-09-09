@@ -1,0 +1,21 @@
+{
+  "name": "Our Lobby",
+  "short_name": "OurLobby",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#120B21",
+  "theme_color": "#120B21",
+  "description": "Un refugio digital privado para los dos.",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -6,10 +6,10 @@ import confetti from 'canvas-confetti';
 
 interface BattleshipGameProps {
   onBack: () => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
-  onUpdateScore: (winner: 'Sapo' | 'Mi Rey') => void;
-  currentUser: 'Sapo' | 'Mi Rey';
+  onUpdateScore: (winner: 'Baby' | 'Mi Rey') => void;
+  currentUser: 'Baby' | 'Mi Rey';
 }
 
 type Orientation = 'horizontal' | 'vertical';
@@ -37,7 +37,7 @@ interface PlacedShip {
 
 interface LogEntry {
   id: string;
-  attacker: 'Sapo' | 'Mi Rey';
+  attacker: 'Baby' | 'Mi Rey';
   coord: string;
   result: 'hit' | 'miss' | 'sunk';
   shipName?: string;
@@ -46,33 +46,33 @@ interface LogEntry {
 
 interface BattleshipSyncState {
   phase: 'setup' | 'playing' | 'game_over';
-  sapoShips: PlacedShip[];
+  babyShips: PlacedShip[];
   miReyShips: PlacedShip[];
-  sapoBoard: Record<number, 'hit' | 'miss'>; // Sapo's board (attacked by Mi Rey)
-  miReyBoard: Record<number, 'hit' | 'miss'>; // Mi Rey's board (attacked by Sapo)
-  currentTurn: 'Sapo' | 'Mi Rey';
+  babyBoard: Record<number, 'hit' | 'miss'>; // Baby's board (attacked by Mi Rey)
+  miReyBoard: Record<number, 'hit' | 'miss'>; // Mi Rey's board (attacked by Baby)
+  currentTurn: 'Baby' | 'Mi Rey';
   logs: LogEntry[];
-  sapoReady: boolean;
+  babyReady: boolean;
   miReyReady: boolean;
-  winner: 'Sapo' | 'Mi Rey' | null;
+  winner: 'Baby' | 'Mi Rey' | null;
 }
 
 const defaultState: BattleshipSyncState = {
   phase: 'setup',
-  sapoShips: [],
+  babyShips: [],
   miReyShips: [],
-  sapoBoard: {},
+  babyBoard: {},
   miReyBoard: {},
-  currentTurn: 'Sapo',
+  currentTurn: 'Baby',
   logs: [],
-  sapoReady: false,
+  babyReady: false,
   miReyReady: false,
   winner: null,
 };
 
 export const BattleshipGame: React.FC<BattleshipGameProps> = ({
   onBack,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
   onUpdateScore,
   currentUser,
@@ -86,13 +86,13 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
 
   const {
     phase = 'setup',
-    sapoShips = [],
+    babyShips = [],
     miReyShips = [],
-    sapoBoard = {},
+    babyBoard = {},
     miReyBoard = {},
-    currentTurn = 'Sapo',
+    currentTurn = 'Baby',
     logs = [],
-    sapoReady = false,
+    babyReady = false,
     miReyReady = false,
     winner = null,
   } = gameState || defaultState;
@@ -105,24 +105,24 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
   // Reset local state if we enter setup phase
   useEffect(() => {
     if (phase === 'setup') {
-      const isPlayerReady = currentUser === 'Sapo' ? sapoReady : miReyReady;
+      const isPlayerReady = currentUser === 'Baby' ? babyReady : miReyReady;
       if (!isPlayerReady) {
         setLocalShips([]);
         setActiveShipIdx(0);
       }
     }
-  }, [phase, sapoReady, miReyReady, currentUser]);
+  }, [phase, babyReady, miReyReady, currentUser]);
 
   // Sync phase change to playing when both players are ready
   useEffect(() => {
-    if (phase === 'setup' && sapoReady && miReyReady) {
+    if (phase === 'setup' && babyReady && miReyReady) {
       setGameState(prev => ({
         ...prev,
         phase: 'playing',
-        currentTurn: 'Sapo', // Sapo (Elvia) goes first
+        currentTurn: 'Baby', // Baby (Elvia) goes first
       }));
     }
-  }, [phase, sapoReady, miReyReady]);
+  }, [phase, babyReady, miReyReady]);
 
   // Coordinate naming helper (e.g. A1, J10)
   const getCoordName = (index: number) => {
@@ -190,11 +190,11 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
 
   const handleConfirmFleet = () => {
     playCutePop();
-    if (currentUser === 'Sapo') {
+    if (currentUser === 'Baby') {
       setGameState(prev => ({
         ...prev,
-        sapoShips: localShips,
-        sapoReady: true,
+        babyShips: localShips,
+        babyReady: true,
       }));
     } else {
       setGameState(prev => ({
@@ -209,10 +209,10 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
   const handleAttackCellClick = (index: number) => {
     if (currentTurn !== currentUser || phase !== 'playing') return;
 
-    const activeOpponentBoard = currentUser === 'Sapo' ? miReyBoard : sapoBoard;
+    const activeOpponentBoard = currentUser === 'Baby' ? miReyBoard : babyBoard;
     if (activeOpponentBoard[index]) return; // Already attacked
 
-    const opponentShips = currentUser === 'Sapo' ? miReyShips : sapoShips;
+    const opponentShips = currentUser === 'Baby' ? miReyShips : babyShips;
     
     let hitShip = null;
     let isSunk = false;
@@ -259,10 +259,10 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
       });
       setGameState(prev => ({
         ...prev,
-        sapoShips: currentUser === 'Sapo' ? sapoShips : updatedShips,
+        babyShips: currentUser === 'Baby' ? babyShips : updatedShips,
         miReyShips: currentUser === 'Mi Rey' ? miReyShips : updatedShips,
-        sapoBoard: currentUser === 'Mi Rey' ? { ...sapoBoard, [index]: 'hit' as const } : sapoBoard,
-        miReyBoard: currentUser === 'Sapo' ? { ...miReyBoard, [index]: 'hit' as const } : miReyBoard,
+        babyBoard: currentUser === 'Mi Rey' ? { ...babyBoard, [index]: 'hit' as const } : babyBoard,
+        miReyBoard: currentUser === 'Baby' ? { ...miReyBoard, [index]: 'hit' as const } : miReyBoard,
         logs: nextLogs,
         phase: 'game_over',
         winner: currentUser,
@@ -275,10 +275,10 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
       playBattleshipHit();
       setGameState(prev => ({
         ...prev,
-        sapoShips: currentUser === 'Sapo' ? sapoShips : updatedShips,
+        babyShips: currentUser === 'Baby' ? babyShips : updatedShips,
         miReyShips: currentUser === 'Mi Rey' ? miReyShips : updatedShips,
-        sapoBoard: currentUser === 'Mi Rey' ? { ...sapoBoard, [index]: 'hit' as const } : sapoBoard,
-        miReyBoard: currentUser === 'Sapo' ? { ...miReyBoard, [index]: 'hit' as const } : miReyBoard,
+        babyBoard: currentUser === 'Mi Rey' ? { ...babyBoard, [index]: 'hit' as const } : babyBoard,
+        miReyBoard: currentUser === 'Baby' ? { ...miReyBoard, [index]: 'hit' as const } : miReyBoard,
         logs: nextLogs,
       }));
     } else {
@@ -286,10 +286,10 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
       // Miss switches turn
       setGameState(prev => ({
         ...prev,
-        sapoBoard: currentUser === 'Mi Rey' ? { ...sapoBoard, [index]: 'miss' as const } : sapoBoard,
-        miReyBoard: currentUser === 'Sapo' ? { ...miReyBoard, [index]: 'miss' as const } : miReyBoard,
+        babyBoard: currentUser === 'Mi Rey' ? { ...babyBoard, [index]: 'miss' as const } : babyBoard,
+        miReyBoard: currentUser === 'Baby' ? { ...miReyBoard, [index]: 'miss' as const } : miReyBoard,
         logs: nextLogs,
-        currentTurn: currentUser === 'Sapo' ? 'Mi Rey' : 'Sapo',
+        currentTurn: currentUser === 'Baby' ? 'Mi Rey' : 'Baby',
       }));
     }
   };
@@ -309,16 +309,16 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
     return ((totalCells - hitCells) / totalCells) * 100;
   };
 
-  const sapoHealth = getHealth(sapoShips);
+  const babyHealth = getHealth(babyShips);
   const miReyHealth = getHealth(miReyShips);
 
   // Render setup screen
   if (phase === 'setup') {
-    const isPlayerReady = currentUser === 'Sapo' ? sapoReady : miReyReady;
+    const isPlayerReady = currentUser === 'Baby' ? babyReady : miReyReady;
     const isFleetComplete = localShips.length === SHIPS.length;
 
     if (isPlayerReady) {
-      const otherPlayerName = currentUser === 'Sapo' ? miReyProfile.name : sapoProfile.name;
+      const otherPlayerName = currentUser === 'Baby' ? miReyProfile.name : babyProfile.name;
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6 p-6 text-white">
           <span className="material-symbols-outlined text-6xl text-[#7adaa1] animate-pulse">sailing</span>
@@ -347,7 +347,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
           </div>
 
           <div className="text-center">
-            <h2 className="text-3xl font-display-lg text-white mb-2">¡Coloca tu flota, {currentUser === 'Sapo' ? sapoProfile.name : miReyProfile.name}! ⚓</h2>
+            <h2 className="text-3xl font-display-lg text-white mb-2">¡Coloca tu flota, {currentUser === 'Baby' ? babyProfile.name : miReyProfile.name}! ⚓</h2>
             <p className="text-[#e2bec0] font-label-mono text-xs">Posiciona tus 5 barcos en la cuadrícula de batalla.</p>
           </div>
 
@@ -465,11 +465,11 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
   }
 
   // playing or game_over layout
-  const isSapo = currentUser === 'Sapo';
-  const myBoard = isSapo ? sapoBoard : miReyBoard;
-  const opponentBoard = isSapo ? miReyBoard : sapoBoard;
-  const myShips = isSapo ? sapoShips : miReyShips;
-  const opponentShips = isSapo ? miReyShips : sapoShips;
+  const isBaby = currentUser === 'Baby';
+  const myBoard = isBaby ? babyBoard : miReyBoard;
+  const opponentBoard = isBaby ? miReyBoard : babyBoard;
+  const myShips = isBaby ? babyShips : miReyShips;
+  const opponentShips = isBaby ? miReyShips : babyShips;
 
   return (
     <div className="relative pt-6 px-4 md:px-8 min-h-screen bg-[#221934] pb-32">
@@ -492,7 +492,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
         {phase === 'game_over' && winner && (
           <div className="bg-[#7adaa1]/20 border-2 border-[#7adaa1] rounded-[2rem] p-6 text-center shadow-[0_0_30px_rgba(122,218,161,0.2)] animate-bounce mb-2">
             <h2 className="text-3xl sm:text-4xl font-display-lg text-[#7adaa1] font-bold mb-1">
-              🏆 ¡Victoria de {winner === 'Sapo' ? sapoProfile.name : miReyProfile.name}! 🏆
+              🏆 ¡Victoria de {winner === 'Baby' ? babyProfile.name : miReyProfile.name}! 🏆
             </h2>
             <p className="text-white text-sm font-label-mono uppercase tracking-wider">
               ¡Ha hundido toda la flota enemiga! 🎉🚢💥
@@ -502,23 +502,23 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
 
         {/* Status / Player Score Panel */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-          {/* Player 1: Sapo */}
-          <div className={`flex items-center gap-4 bg-[#2f2348]/70 backdrop-blur-xl p-4 rounded-2xl border ${currentTurn === 'Sapo' && phase === 'playing' ? 'border-[#7adaa1] shadow-[0_0_15px_rgba(122,218,161,0.2)]' : 'border-[#5a4042]/30'} relative overflow-hidden transition-all`}>
+          {/* Player 1: Baby */}
+          <div className={`flex items-center gap-4 bg-[#2f2348]/70 backdrop-blur-xl p-4 rounded-2xl border ${currentTurn === 'Baby' && phase === 'playing' ? 'border-[#7adaa1] shadow-[0_0_15px_rgba(122,218,161,0.2)]' : 'border-[#5a4042]/30'} relative overflow-hidden transition-all`}>
             <div className="relative w-14 h-14 shrink-0">
-              <img src={sapoProfile.avatar} className="w-full h-full object-cover rounded-full shadow-md z-10 relative" />
-              <div className={`absolute inset-0 rounded-full ring-4 ${currentTurn === 'Sapo' && phase === 'playing' ? 'ring-[#7adaa1]' : 'ring-transparent'} ring-offset-2 ring-offset-[#2f2348] z-20 transition-all`}></div>
+              <img src={babyProfile.avatar} className="w-full h-full object-cover rounded-full shadow-md z-10 relative" />
+              <div className={`absolute inset-0 rounded-full ring-4 ${currentTurn === 'Baby' && phase === 'playing' ? 'ring-[#7adaa1]' : 'ring-transparent'} ring-offset-2 ring-offset-[#2f2348] z-20 transition-all`}></div>
             </div>
             <div className="flex flex-col flex-1 gap-1 z-10">
               <div className="flex justify-between items-center">
-                <span className="text-base font-bold text-white">{sapoProfile.name}</span>
-                {currentTurn === 'Sapo' && phase === 'playing' && (
+                <span className="text-base font-bold text-white">{babyProfile.name}</span>
+                {currentTurn === 'Baby' && phase === 'playing' && (
                   <span className="text-[10px] font-label-caps text-[#180c30] bg-[#7adaa1] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold animate-pulse">Atacando</span>
                 )}
               </div>
               <div className="w-full bg-[#13062b] rounded-full h-2 overflow-hidden mt-1">
-                <div className="bg-[#7adaa1] h-full rounded-full transition-all duration-500" style={{ width: `${sapoHealth}%` }}></div>
+                <div className="bg-[#7adaa1] h-full rounded-full transition-all duration-500" style={{ width: `${babyHealth}%` }}></div>
               </div>
-              <div className="text-[10px] text-[#e2bec0] font-label-mono text-right">Flota: {Math.round(sapoHealth)}%</div>
+              <div className="text-[10px] text-[#e2bec0] font-label-mono text-right">Flota: {Math.round(babyHealth)}%</div>
             </div>
           </div>
 
@@ -566,7 +566,7 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
                 <div className="grid grid-cols-10 gap-1 w-full h-full">
                   {Array.from({ length: 100 }).map((_, i) => {
                     const state = opponentBoard[i];
-                    // Find if Sapo has hit Mi Rey's ships in this cell, and if it's sunk
+                    // Find if Baby has hit Mi Rey's ships in this cell, and if it's sunk
                     const opponentShipHit = opponentShips.find(s => s.cells.includes(i));
                     const isSunk = opponentShipHit && opponentShipHit.hits.length === opponentShipHit.cells.length;
                     const isMyTurn = currentTurn === currentUser && phase === 'playing';
@@ -663,8 +663,8 @@ export const BattleshipGame: React.FC<BattleshipGameProps> = ({
                     </span>
                     <div className="flex-1">
                       <div>
-                        <span className={`font-bold ${log.attacker === 'Sapo' ? 'text-[#7adaa1]' : 'text-[#fabc41]'}`}>
-                          {log.attacker === 'Sapo' ? sapoProfile.name : miReyProfile.name}
+                        <span className={`font-bold ${log.attacker === 'Baby' ? 'text-[#7adaa1]' : 'text-[#fabc41]'}`}>
+                          {log.attacker === 'Baby' ? babyProfile.name : miReyProfile.name}
                         </span>{' '}
                         atacó {log.coord}.{' '}
                         <span className="font-bold text-white">

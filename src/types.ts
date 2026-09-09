@@ -12,7 +12,7 @@ export type ViewType =
   | 'peliculas'
   | 'settings';
 
-export type UserPartner = 'Sapo' | 'Mi Rey';
+export type UserPartner = 'Baby' | 'Mi Rey';
 
 export interface UserProfile {
   name: string;
@@ -34,7 +34,7 @@ export interface MemoryItem {
   date: string;
   location: string;
   imageUrl: string;
-  capturedBy: 'Sapo' | 'Mi Rey' | 'Together';
+  capturedBy: 'Baby' | 'Mi Rey' | 'Together';
   rotation?: string;
   isWide?: boolean;
   album?: 'recuerdos' | 'cumpleanos' | 'juntos' | 'lugares' | 'nosotros';
@@ -44,7 +44,7 @@ export interface MemoryItem {
 export interface NoteItem {
   id: string;
   text: string;
-  author: 'Sapo' | 'Mi Rey';
+  author: 'Baby' | 'Mi Rey';
   dateStr: string;
   category: 'lindos' | 'mejorar';
   urgency?: 'calma' | 'importante' | 'urgente';
@@ -58,7 +58,7 @@ export interface MissionItem {
   title: string;
   description: string;
   urgency: 'calma' | 'importante' | 'urgente';
-  author: 'Sapo' | 'Mi Rey';
+  author: 'Baby' | 'Mi Rey';
   progress: number;
   isCompleted: boolean;
   dateCreated?: string;
@@ -69,7 +69,7 @@ export interface GoalItem {
   title: string;
   description?: string;
   category: 'distancia' | 'reencuentro' | 'argentina' | 'guayaquil' | 'futuro';
-  author: 'Sapo' | 'Mi Rey' | 'Juntos';
+  author: 'Baby' | 'Mi Rey' | 'Juntos';
   isCompleted: boolean;
   completedAt?: string;
   dateCreated?: string;
@@ -81,8 +81,8 @@ export interface CouponItem {
   code: string;
   title: string;
   description: string;
-  from: 'Sapo' | 'Mi Rey';
-  to: 'Sapo' | 'Mi Rey';
+  from: 'Baby' | 'Mi Rey';
+  to: 'Baby' | 'Mi Rey';
   themeColor: 'pink' | 'amber' | 'emerald' | 'purple' | 'cyan';
   isRedeemed: boolean;
   redeemedAt?: string;
@@ -110,8 +110,8 @@ export interface LetterItem {
   id: string;
   title: string;
   body: string;
-  from: 'Sapo' | 'Mi Rey';
-  to: 'Sapo' | 'Mi Rey';
+  from: 'Baby' | 'Mi Rey';
+  to: 'Baby' | 'Mi Rey';
   dateStr: string;
   createdAt: string; // ISO date string
   isRead: boolean;
@@ -125,12 +125,12 @@ export interface MovieItem {
   posterUrl?: string;
   genre?: string;
   year?: string;
-  suggestedBy: 'Sapo' | 'Mi Rey' | 'Juntos';
+  suggestedBy: 'Baby' | 'Mi Rey' | 'Juntos';
   status: 'pendiente' | 'viendo' | 'vista';
   watchedAt?: string;
-  sapoRating?: number;   // 1-5
+  babyRating?: number;   // 1-5
   miReyRating?: number;  // 1-5
-  sapoComment?: string;
+  babyComment?: string;
   miReyComment?: string;
   createdAt: string;
 }
@@ -146,8 +146,8 @@ export interface EpisodeReview {
   seasonNumber: number;
   episodeNumber: number;
   watchedAt: string;
-  sapoRating?: number;
-  sapoComment?: string;
+  babyRating?: number;
+  babyComment?: string;
   miReyRating?: number;
   miReyComment?: string;
 }
@@ -159,7 +159,7 @@ export interface SeriesItem {
   genre?: string;
   isAnime?: boolean;
   animeType?: string;
-  suggestedBy: 'Sapo' | 'Mi Rey' | 'Juntos';
+  suggestedBy: 'Baby' | 'Mi Rey' | 'Juntos';
   status: 'pendiente' | 'viendo' | 'terminada';
   seasonsConfig: SeasonConfig[];
   currentSeason: number;
@@ -175,7 +175,7 @@ export interface MusicState {
   isPlaying: boolean;
   timestamp: number;
   updatedAt: number; // to calculate offset
-  setBy: 'Sapo' | 'Mi Rey';
+  setBy: 'Baby' | 'Mi Rey';
   isPlaylist?: boolean;
   playlistId?: string;
   playlistIndex?: number;
@@ -186,13 +186,13 @@ export interface MovieSyncSession {
   active: boolean;
   movieTitle: string;
   countdownStartedAt: string; // ISO date, the moment both hit play
-  startedBy: 'Sapo' | 'Mi Rey';
+  startedBy: 'Baby' | 'Mi Rey';
 }
 
 /** Special dates configuration */
 export interface SpecialDatesConfig {
   anniversaryDate: string;   // ISO: "2024-07-27"
-  sapoBirthday: string;      // ISO: "2005-06-07"
+  babyBirthday: string;      // ISO: "2005-06-07"
   miReyBirthday: string;     // ISO: "2001-03-28"
   reunionDate?: string;      // ISO: upcoming reunion
 }
@@ -200,5 +200,5 @@ export interface SpecialDatesConfig {
 /** Love Event for sending affection */
 export interface LoveEvent {
   timestamp: number;
-  sender: 'Sapo' | 'Mi Rey';
+  sender: 'Baby' | 'Mi Rey';
 }

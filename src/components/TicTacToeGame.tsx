@@ -5,15 +5,15 @@ import { useSyncedDoc } from '../lib/useFirestore';
 
 interface TicTacToeGameProps {
   onBack: () => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
-  onUpdateScore: (winner: 'Sapo' | 'Mi Rey') => void;
-  currentUser: 'Sapo' | 'Mi Rey';
+  onUpdateScore: (winner: 'Baby' | 'Mi Rey') => void;
+  currentUser: 'Baby' | 'Mi Rey';
 }
 
 interface TicTacToeSyncState {
   board: string[];
-  currentPlayer: 'X' | 'O'; // X = Sapo (❤️), O = Mi Rey (⭐)
+  currentPlayer: 'X' | 'O'; // X = Baby (❤️), O = Mi Rey (⭐)
   gameActive: boolean;
   winningCombo: number[] | null;
   scoreX: number;
@@ -31,7 +31,7 @@ const defaultState: TicTacToeSyncState = {
 
 export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
   onBack,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
   onUpdateScore,
   currentUser,
@@ -52,7 +52,7 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
   ];
 
   // Helper to determine if it's the current player's turn to play
-  const isMyTurn = (currentUser === 'Sapo' && currentPlayer === 'X') || 
+  const isMyTurn = (currentUser === 'Baby' && currentPlayer === 'X') || 
                    (currentUser === 'Mi Rey' && currentPlayer === 'O');
 
   const handleCellClick = (index: number) => {
@@ -91,7 +91,7 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
       });
 
       // Update global scoreboard
-      onUpdateScore(currentPlayer === 'X' ? 'Sapo' : 'Mi Rey');
+      onUpdateScore(currentPlayer === 'X' ? 'Baby' : 'Mi Rey');
       return;
     }
 
@@ -124,7 +124,7 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
     playCutePop();
     setGameState({
       board: Array(9).fill(''),
-      currentPlayer: 'X', // Sapo goes first on reset
+      currentPlayer: 'X', // Baby goes first on reset
       gameActive: true,
       winningCombo: null,
       scoreX,
@@ -174,7 +174,7 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
             }`}
           ></div>
 
-          {/* Player 1: Sapo */}
+          {/* Player 1: Baby */}
           <div
             className={`flex-1 flex items-center justify-start gap-3 md:gap-4 px-4 sm:px-6 py-3 relative z-10 transition-opacity ${
               currentPlayer === 'X' ? 'opacity-100' : 'opacity-60'
@@ -182,8 +182,8 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
           >
             <div className="relative">
               <img
-                alt="Sapo Avatar"
-                src={sapoProfile.avatar}
+                alt="Baby Avatar"
+                src={babyProfile.avatar}
                 className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover ring-2 ring-[#ff5470] shadow-[0_0_20px_rgba(255,84,112,0.4)]"
               />
               <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-[#ff5470] rounded-full flex items-center justify-center text-[10px] sm:text-xs text-white font-bold border-2 border-[#2f2348]">
@@ -192,7 +192,7 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
             </div>
             <div className="flex flex-col">
               <span className="font-headline-md text-sm sm:text-base text-white leading-tight">
-                {sapoProfile.name}
+                {babyProfile.name}
               </span>
               <span className="font-headline-lg text-2xl sm:text-3xl leading-none text-[#ff5470] font-bold mt-0.5">
                 {scoreX}
@@ -272,13 +272,13 @@ export const TicTacToeGame: React.FC<TicTacToeGameProps> = ({
           <div className="font-headline-lg text-lg sm:text-xl text-white text-center min-h-[32px]">
             {winningCombo ? (
               <span className={`animate-bounce font-bold ${currentPlayer === 'X' ? 'text-[#ff5470]' : 'text-[#fabc41]'}`}>
-                ¡{currentPlayer === 'X' ? sapoProfile.name : miReyProfile.name} ha ganado! 🏆🎉
+                ¡{currentPlayer === 'X' ? babyProfile.name : miReyProfile.name} ha ganado! 🏆🎉
               </span>
             ) : isDraw ? (
               <span className="text-[#e2bec0] font-bold">¡Empate de amor! 🤝</span>
             ) : (
               <span className={currentPlayer === 'X' ? 'text-[#ff5470] animate-pulse' : 'text-[#fabc41] animate-pulse'}>
-                {isMyTurn ? '¡Es tu turno!' : `Esperando a ${currentPlayer === 'X' ? sapoProfile.name : miReyProfile.name}...`}
+                {isMyTurn ? '¡Es tu turno!' : `Esperando a ${currentPlayer === 'X' ? babyProfile.name : miReyProfile.name}...`}
               </span>
             )}
           </div>

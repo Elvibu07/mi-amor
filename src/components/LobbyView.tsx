@@ -5,19 +5,19 @@ import { MusicPlayer } from './MusicPlayer';
 
 interface LobbyViewProps {
   onNavigate: (view: ViewType) => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
   gyeTime: string;
   argTime: string;
   daysToReunion: number;
   onSendLove: () => void;
-  currentUser: 'Sapo' | 'Mi Rey';
+  currentUser: 'Baby' | 'Mi Rey';
   memories: MemoryItem[];
 }
 
 export const LobbyView: React.FC<LobbyViewProps> = ({
   onNavigate,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
   gyeTime,
   argTime,
@@ -31,14 +31,14 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
     try {
       const now = new Date();
       // Get the UTC offset for each timezone by comparing local midnight
-      const sapoTz = sapoProfile.timezone?.includes('/') ? sapoProfile.timezone : 'America/Guayaquil';
+      const babyTz = babyProfile.timezone?.includes('/') ? babyProfile.timezone : 'America/Guayaquil';
       const miReyTz = miReyProfile.timezone?.includes('/') ? miReyProfile.timezone : 'America/Argentina/Buenos_Aires';
 
       // Get hours for each timezone
-      const sapoHour = parseInt(now.toLocaleString('en-US', { timeZone: sapoTz, hour: 'numeric', hour12: false }), 10);
+      const babyHour = parseInt(now.toLocaleString('en-US', { timeZone: babyTz, hour: 'numeric', hour12: false }), 10);
       const miReyHour = parseInt(now.toLocaleString('en-US', { timeZone: miReyTz, hour: 'numeric', hour12: false }), 10);
 
-      let diff = miReyHour - sapoHour;
+      let diff = miReyHour - babyHour;
       // Normalize to [-12, 12]
       if (diff > 12) diff -= 24;
       if (diff < -12) diff += 24;
@@ -50,7 +50,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
     } catch {
       return '± horas';
     }
-  }, [sapoProfile.timezone, miReyProfile.timezone, gyeTime]); // gyeTime ticks every second
+  }, [babyProfile.timezone, miReyProfile.timezone, gyeTime]); // gyeTime ticks every second
 
   // Slideshow memories list
   const displayMemories = useMemo(() => {
@@ -86,24 +86,24 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
     <main className="flex-1 p-4 md:p-8 flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto w-full">
       {/* Dual-Clock HUD */}
       <section className="bg-[#2E2247] rounded-[2rem] p-6 md:p-10 shadow-xl border border-[#5a4042]/20 flex flex-col lg:flex-row justify-between items-center relative overflow-hidden gap-6">
-        {/* Guayaquil (Sapo) */}
+        {/* Guayaquil (Baby) */}
         <div className="flex items-center gap-4 md:gap-6 z-10 w-full lg:w-auto justify-start">
           <img 
-            alt="Sapo Avatar" 
+            alt="Baby Avatar" 
             className="w-20 h-20 md:w-28 md:h-28 rounded-full border-4 border-[#3a2e54] object-cover shadow-xl ring-2 ring-[#7adaa1]/40" 
-            src={sapoProfile.avatar}
+            src={babyProfile.avatar}
           />
           <div className="flex flex-col">
             <span className="text-[#7adaa1] font-label-mono uppercase tracking-widest text-xs md:text-sm mb-1 md:mb-2 flex items-center gap-1">
-              {sapoProfile.city} • {sapoProfile.country} {sapoProfile.isTraveling && '✈️'}
+              {babyProfile.city} • {babyProfile.country} {babyProfile.isTraveling && '✈️'}
             </span>
             <span className="font-['IBM_Plex_Mono',monospace] text-4xl sm:text-6xl md:text-7xl text-[#eaddff] font-bold leading-none tracking-tight">
               {gyeTime}
             </span>
-            {sapoProfile.statusPhrase && (
+            {babyProfile.statusPhrase && (
               <div className="flex items-center gap-1.5 text-[11px] text-[#e2bec0] italic mt-2 bg-[#201439]/60 border border-[#7adaa1]/25 px-2.5 py-1 rounded-xl w-fit max-w-[180px] sm:max-w-[280px] shadow-sm">
                 <span className="material-symbols-outlined text-[12px] text-[#7adaa1]">chat_bubble</span>
-                <span className="truncate" title={sapoProfile.statusPhrase}>"{sapoProfile.statusPhrase}"</span>
+                <span className="truncate" title={babyProfile.statusPhrase}>"{babyProfile.statusPhrase}"</span>
               </div>
             )}
           </div>
@@ -158,7 +158,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
         {/* Real-time Music Player Widget (Left Column) */}
         <MusicPlayer 
           currentUser={currentUser}
-          sapoProfile={sapoProfile}
+          babyProfile={babyProfile}
           miReyProfile={miReyProfile}
         />
 
@@ -203,8 +203,8 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                     <span className="bg-[#ff5470]/20 text-[#ffb2b8] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
                       {activeMemory.capturedBy === 'Together' 
                         ? 'Ambos' 
-                        : activeMemory.capturedBy === 'Sapo' 
-                        ? sapoProfile.name 
+                        : activeMemory.capturedBy === 'Baby' 
+                        ? babyProfile.name 
                         : miReyProfile.name}
                     </span>
                   </div>

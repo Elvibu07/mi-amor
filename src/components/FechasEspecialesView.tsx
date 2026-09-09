@@ -3,7 +3,7 @@ import { UserProfile } from '../types';
 import confetti from 'canvas-confetti';
 
 interface FechasEspecialesViewProps {
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
   daysToReunion: number;
   onUpdateDays: (n: number) => void;
@@ -15,7 +15,7 @@ interface FechasEspecialesViewProps {
 
 // ── Hardcoded special dates ───────────────────────────────────────────────────
 const ANNIVERSARY_DATE = new Date('2024-07-27T00:00:00');
-const SAPO_BIRTHDAY = { month: 6, day: 7, year: 2005 };   // June 7
+const BABY_BIRTHDAY = { month: 6, day: 7, year: 2005 };   // June 7
 const MIREY_BIRTHDAY = { month: 3, day: 28, year: 2001 };  // March 28
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ const CounterCard: React.FC<CounterCardProps> = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
-  sapoProfile,
+  babyProfile,
   miReyProfile,
   daysToReunion,
   onUpdateDays,
@@ -184,13 +184,13 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
   const todayIsMesi = now.getDate() === 27;
 
   // ── Birthdays ─────────────────────────────────────────────────────────────
-  const nextSapoBday = nextOccurrence(SAPO_BIRTHDAY.month, SAPO_BIRTHDAY.day, now);
+  const nextBabyBday = nextOccurrence(BABY_BIRTHDAY.month, BABY_BIRTHDAY.day, now);
   const nextMiReyBday = nextOccurrence(MIREY_BIRTHDAY.month, MIREY_BIRTHDAY.day, now);
-  const daysToSapoBday = daysBetween(now, nextSapoBday);
+  const daysToBabyBday = daysBetween(now, nextBabyBday);
   const daysToMiReyBday = daysBetween(now, nextMiReyBday);
 
-  const sapoAge = now.getFullYear() - SAPO_BIRTHDAY.year - (
-    (now.getMonth() + 1 < SAPO_BIRTHDAY.month || (now.getMonth() + 1 === SAPO_BIRTHDAY.month && now.getDate() < SAPO_BIRTHDAY.day)) ? 1 : 0
+  const babyAge = now.getFullYear() - BABY_BIRTHDAY.year - (
+    (now.getMonth() + 1 < BABY_BIRTHDAY.month || (now.getMonth() + 1 === BABY_BIRTHDAY.month && now.getDate() < BABY_BIRTHDAY.day)) ? 1 : 0
   );
   const miReyAge = now.getFullYear() - MIREY_BIRTHDAY.year - (
     (now.getMonth() + 1 < MIREY_BIRTHDAY.month || (now.getMonth() + 1 === MIREY_BIRTHDAY.month && now.getDate() < MIREY_BIRTHDAY.day)) ? 1 : 0
@@ -200,14 +200,14 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
   const confettiFired = useRef(false);
   useEffect(() => {
     if (confettiFired.current) return;
-    const isBday = isToday(nextSapoBday) || isToday(nextMiReyBday);
+    const isBday = isToday(nextBabyBday) || isToday(nextMiReyBday);
     if (todayIsMesi || isBday) {
       confettiFired.current = true;
       setTimeout(() => {
         confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, colors: ['#ff5470', '#fabc41', '#7adaa1', '#ffb2b8', '#a78bfa'] });
       }, 800);
     }
-  }, [todayIsMesi, nextSapoBday, nextMiReyBday]);
+  }, [todayIsMesi, nextBabyBday, nextMiReyBday]);
 
   // ── Reunion editing ───────────────────────────────────────────────────────
   const handleReunionInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,7 +216,7 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
   };
 
   const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  const sapoDate = `${String(SAPO_BIRTHDAY.day).padStart(2, '0')} ${monthNames[SAPO_BIRTHDAY.month - 1]}`;
+  const babyDate = `${String(BABY_BIRTHDAY.day).padStart(2, '0')} ${monthNames[BABY_BIRTHDAY.month - 1]}`;
   const miReyDate = `${String(MIREY_BIRTHDAY.day).padStart(2, '0')} ${monthNames[MIREY_BIRTHDAY.month - 1]}`;
   const anivDate = `27 jul`;
 
@@ -262,18 +262,18 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
           isToday={todayIsMesi}
         />
 
-        {/* Sapo birthday */}
+        {/* Baby birthday */}
         <CounterCard
           icon="cake"
           emoji="🎂"
-          avatar={sapoProfile.avatar}
-          title={`Cumple de ${sapoProfile.name} ❤️`}
-          subtitle={`${sapoDate} • ${sapoAge + 1} añitos`}
-          valueLabel={isToday(nextSapoBday) ? '¡Feliz cumple! 🎉' : 'días restantes'}
-          value={isToday(nextSapoBday) ? '🎂' : daysToSapoBday}
+          avatar={babyProfile.avatar}
+          title={`Cumple de ${babyProfile.name} ❤️`}
+          subtitle={`${babyDate} • ${babyAge + 1} añitos`}
+          valueLabel={isToday(nextBabyBday) ? '¡Feliz cumple! 🎉' : 'días restantes'}
+          value={isToday(nextBabyBday) ? '🎂' : daysToBabyBday}
           accent="#7adaa1"
           bg="linear-gradient(135deg, #2E2247 0%, #1a2e28 100%)"
-          isToday={isToday(nextSapoBday)}
+          isToday={isToday(nextBabyBday)}
         />
 
         {/* Mi Rey birthday */}
@@ -341,7 +341,7 @@ export const FechasEspecialesView: React.FC<FechasEspecialesViewProps> = ({
       {/* Dual clocks mini */}
       <div className="mt-4 grid grid-cols-2 gap-4">
         {[
-          { label: `${sapoProfile.city} ${sapoProfile.country === 'Ecuador' ? '🇪🇨' : sapoProfile.country === 'Argentina' ? '🇦🇷' : '🌍'}`, time: gyeTime, name: sapoProfile.name, accent: '#7adaa1', avatar: sapoProfile.avatar },
+          { label: `${babyProfile.city} ${babyProfile.country === 'Ecuador' ? '🇪🇨' : babyProfile.country === 'Argentina' ? '🇦🇷' : '🌍'}`, time: gyeTime, name: babyProfile.name, accent: '#7adaa1', avatar: babyProfile.avatar },
           { label: `${miReyProfile.city} ${miReyProfile.country === 'Argentina' ? '🇦🇷' : miReyProfile.country === 'Ecuador' ? '🇪🇨' : '🌍'}`, time: argTime, name: miReyProfile.name, accent: '#fabc41', avatar: miReyProfile.avatar },
         ].map((c) => (
           <div key={c.name} className="bg-[#2E2247] rounded-2xl p-4 border border-[#5a4042]/20 flex items-center gap-3">

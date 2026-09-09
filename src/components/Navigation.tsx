@@ -4,13 +4,13 @@ import { ViewType, UserProfile } from '../types';
 interface NavigationProps {
   currentView: ViewType;
   onNavigate: (view: ViewType) => void;
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
   gyeTime: string;
   argTime: string;
   daysToReunion: number;
   unreadLetters?: number;
-  currentUser?: 'Sapo' | 'Mi Rey';
+  currentUser?: 'Baby' | 'Mi Rey';
   onLogout?: () => void;
 }
 
@@ -76,7 +76,7 @@ const NavBtn: React.FC<NavBtnProps> = ({
 export const Navigation: React.FC<NavigationProps> = ({
   currentView,
   onNavigate,
-  sapoProfile,
+  babyProfile,
   miReyProfile,
   gyeTime,
   argTime,
@@ -85,7 +85,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   currentUser,
   onLogout,
 }) => {
-  const myProfile = currentUser === 'Sapo' ? sapoProfile : miReyProfile;
+  const myProfile = currentUser === 'Baby' ? babyProfile : miReyProfile;
 
   return (
     <header className="bg-[#2E2247]/70 backdrop-blur-md z-50 sticky top-0 px-4 md:px-8 py-3 shadow-md border-b border-[#5a4042]/20 w-full">
@@ -125,7 +125,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <span className="text-xs font-label-mono font-bold text-[#fabc41]">{argTime}</span>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-[9px] text-[#e2bec0] font-label-mono uppercase tracking-wider">{sapoProfile.city}</span>
+              <span className="text-[9px] text-[#e2bec0] font-label-mono uppercase tracking-wider">{babyProfile.city}</span>
               <span className="text-xs font-label-mono font-bold text-[#7adaa1]">{gyeTime}</span>
             </div>
           </div>
@@ -138,9 +138,9 @@ export const Navigation: React.FC<NavigationProps> = ({
                   src={myProfile.avatar}
                   alt={currentUser}
                   className="w-6 h-6 rounded-full object-cover"
-                  style={{ border: `1.5px solid ${currentUser === 'Sapo' ? '#7adaa1' : '#fabc41'}60` }}
+                  style={{ border: `1.5px solid ${currentUser === 'Baby' ? '#7adaa1' : '#fabc41'}60` }}
                 />
-                <span className="text-[11px] font-label-caps uppercase tracking-wide" style={{ color: currentUser === 'Sapo' ? '#7adaa1' : '#fabc41' }}>
+                <span className="text-[11px] font-label-caps uppercase tracking-wide" style={{ color: currentUser === 'Baby' ? '#7adaa1' : '#fabc41' }}>
                   {myProfile.name}
                 </span>
               </div>
@@ -152,7 +152,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               title="Configuración"
             >
               <div className="flex -space-x-2">
-                <img alt={sapoProfile.name} src={sapoProfile.avatar} className="w-8 h-8 rounded-full border-2 border-[#3a2e54] object-cover ring-1 ring-[#7adaa1]/40" />
+                <img alt={babyProfile.name} src={babyProfile.avatar} className="w-8 h-8 rounded-full border-2 border-[#3a2e54] object-cover ring-1 ring-[#7adaa1]/40" />
                 <img alt={miReyProfile.name} src={miReyProfile.avatar} className="w-8 h-8 rounded-full border-2 border-[#3a2e54] object-cover ring-1 ring-[#fabc41]/40" />
               </div>
               <span className="material-symbols-outlined text-[#e2bec0] text-sm group-hover:rotate-45 transition-transform">settings</span>

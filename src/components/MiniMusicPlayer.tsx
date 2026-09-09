@@ -4,12 +4,12 @@ import { useSyncedDoc } from '../lib/useFirestore';
 import { playCutePop } from '../utils/audio';
 
 interface MiniMusicPlayerProps {
-  currentUser: 'Sapo' | 'Mi Rey';
-  sapoProfile: UserProfile;
+  currentUser: 'Baby' | 'Mi Rey';
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
 }
 
-export const MiniMusicPlayer: React.FC<MiniMusicPlayerProps> = ({ currentUser, sapoProfile, miReyProfile }) => {
+export const MiniMusicPlayer: React.FC<MiniMusicPlayerProps> = ({ currentUser, babyProfile, miReyProfile }) => {
   const [musicState, setMusicState] = useSyncedDoc<MusicState | null>('shared', 'music_state', 'ourlobby_music', null);
   const [localVolume, setLocalVolume] = React.useState(() => {
     const saved = localStorage.getItem('ourlobby_music_volume');
@@ -57,8 +57,8 @@ export const MiniMusicPlayer: React.FC<MiniMusicPlayerProps> = ({ currentUser, s
     }
   };
 
-  const getName = (role: 'Sapo' | 'Mi Rey') => {
-    return role === 'Sapo' ? sapoProfile.name : miReyProfile.name;
+  const getName = (role: 'Baby' | 'Mi Rey') => {
+    return role === 'Baby' ? babyProfile.name : miReyProfile.name;
   };
 
   return (

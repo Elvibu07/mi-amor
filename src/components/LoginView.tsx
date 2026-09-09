@@ -4,19 +4,19 @@ import { playCutePop } from '../utils/audio';
 import confetti from 'canvas-confetti';
 
 interface LoginViewProps {
-  sapoProfile: UserProfile;
+  babyProfile: UserProfile;
   miReyProfile: UserProfile;
-  onLogin: (user: 'Sapo' | 'Mi Rey') => void;
+  onLogin: (user: 'Baby' | 'Mi Rey') => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ sapoProfile, miReyProfile, onLogin }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ babyProfile, miReyProfile, onLogin }) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
-  const [successFor, setSuccessFor] = useState<'Sapo' | 'Mi Rey' | null>(null);
+  const [successFor, setSuccessFor] = useState<'Baby' | 'Mi Rey' | null>(null);
 
   // Helper to read PINs
-  const getSapoPin = () => sapoProfile.pin || '1111';
+  const getBabyPin = () => babyProfile.pin || '1111';
   const getMiReyPin = () => miReyProfile.pin || '0000';
 
   const handleKey = useCallback(
@@ -32,13 +32,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ sapoProfile, miReyProfile,
       setPin(next);
 
       if (next.length === 4) {
-        const sapoPin = getSapoPin();
+        const babyPin = getBabyPin();
         const miReyPin = getMiReyPin();
 
-        if (next === sapoPin) {
-          setSuccessFor('Sapo');
+        if (next === babyPin) {
+          setSuccessFor('Baby');
           confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 }, colors: ['#7adaa1', '#eaddff'] });
-          setTimeout(() => onLogin('Sapo'), 800);
+          setTimeout(() => onLogin('Baby'), 800);
         } else if (next === miReyPin) {
           setSuccessFor('Mi Rey');
           confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 }, colors: ['#fabc41', '#eaddff'] });
@@ -73,7 +73,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ sapoProfile, miReyProfile,
   const keypadButtons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'back'];
 
   // Determine colors based on success
-  const accentColor = successFor === 'Sapo' ? '#7adaa1' : successFor === 'Mi Rey' ? '#fabc41' : '#ff5470';
+  const accentColor = successFor === 'Baby' ? '#7adaa1' : successFor === 'Mi Rey' ? '#fabc41' : '#ff5470';
 
   return (
     <div 
@@ -119,7 +119,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ sapoProfile, miReyProfile,
             {/* Avatars pop out on success */}
             {successFor && (
               <img 
-                src={successFor === 'Sapo' ? sapoProfile.avatar : miReyProfile.avatar} 
+                src={successFor === 'Baby' ? babyProfile.avatar : miReyProfile.avatar} 
                 alt="Avatar" 
                 className="absolute inset-0 w-24 h-24 rounded-full object-cover border-4 border-[#180c30] animate-pop"
               />
