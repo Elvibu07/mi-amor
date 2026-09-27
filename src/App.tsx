@@ -151,12 +151,15 @@ export default function App() {
     else sessionStorage.removeItem('ourlobby_session');
   }, [currentUser]);
 
+  const [oneSignalReady, setOneSignalReady] = useState(false);
+
   useEffect(() => {
     const initOneSignal = async () => {
       try {
         await OneSignal.init({
           appId: import.meta.env.VITE_ONESIGNAL_APP_ID || '',
           allowLocalhostAsSecureOrigin: true,
+          serviceWorkerParam: { scope: '/' },
           notifyButton: {
             enable: false,
           },
@@ -165,7 +168,7 @@ export default function App() {
               prompts: [
                 {
                   type: 'push',
-                  autoPrompt: true,
+                  autoPrompt: false,
                   text: {
                     actionMessage: 'Acepta para poder vigilarte... 👀 mentira, es para que estés al tanto de todo. ¡Te amo! 💕',
                     acceptButton: 'Obvio que sí 💖',
@@ -176,7 +179,11 @@ export default function App() {
             },
           },
         });
-        OneSignal.Slidedown.promptPush();
+        setOneSignalReady(true);
+        // Small delay before showing prompt to ensure SDK is fully loaded
+        setTimeout(() => {
+          OneSignal.Slidedown.promptPush().catch(() => {});
+        }, 1000);
       } catch (e) {
         console.warn('OneSignal initialization failed:', e);
       }
@@ -187,12 +194,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!oneSignalReady) return;
     if (currentUser) {
-      OneSignal.login(currentUser).catch(e => console.warn('OneSignal login failed:', e));
+      // Small delay to ensure OneSignal SDK internals are fully ready
+      setTimeout(() => {
+        OneSignal.login(currentUser).catch(e => console.warn('OneSignal login failed:', e));
+      }, 500);
     } else {
       OneSignal.logout().catch(e => console.warn('OneSignal logout failed:', e));
     }
-  }, [currentUser]);
+  }, [currentUser, oneSignalReady]);
 
   // ── Data: Profiles ─────────────────────────────────────────────────────────
   const handleAddMemory = addMemory;
