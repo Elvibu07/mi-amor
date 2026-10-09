@@ -12,8 +12,8 @@ interface NochePeliculasViewProps {
   onAddSeries: (s: SeriesItem) => void;
   onUpdateSeries: (id: string, update: Partial<SeriesItem>) => void;
   onDeleteSeries: (id: string) => void;
-  currentUser: 'Baby' | 'Mi Rey';
-  babyProfile: UserProfile;
+  currentUser: 'Sapo' | 'Mi Rey';
+  sapoProfile: UserProfile;
   miReyProfile: UserProfile;
 }
 
@@ -113,7 +113,7 @@ const SyncCountdown: React.FC<{ title: string; onEnd: () => void }> = ({ title, 
 export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
   movies, onAddMovie, onUpdateMovie, onDeleteMovie,
   series, onAddSeries, onUpdateSeries, onDeleteSeries,
-  currentUser, babyProfile, miReyProfile,
+  currentUser, sapoProfile, miReyProfile,
 }) => {
   const [activeSection, setActiveSection] = useState<'peliculas' | 'series' | 'anime'>('peliculas');
   const [tab, setTab] = useState<'pendiente' | 'viendo' | 'vista' | 'terminada' | 'todas'>('pendiente');
@@ -144,8 +144,8 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
   }, [activeSection, tab]);
 
   // ── Derived Data ────────────────────────────────────────────────────────
-  const getName = (role: 'Baby' | 'Mi Rey' | 'Juntos' | string) => {
-    if (role === 'Baby') return babyProfile.name;
+  const getName = (role: 'Sapo' | 'Mi Rey' | 'Juntos' | string) => {
+    if (role === 'Sapo') return sapoProfile.name;
     if (role === 'Mi Rey') return miReyProfile.name;
     return role;
   };
@@ -225,8 +225,8 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
 
   const submitMovieReview = () => {
     if (!reviewingMovie) return;
-    const update: Partial<MovieItem> = currentUser === 'Baby'
-      ? { babyRating: reviewData.rating, babyComment: reviewData.comment || undefined }
+    const update: Partial<MovieItem> = currentUser === 'Sapo'
+      ? { sapoRating: reviewData.rating, sapoComment: reviewData.comment || undefined }
       : { miReyRating: reviewData.rating, miReyComment: reviewData.comment || undefined };
     onUpdateMovie(reviewingMovie.id, update);
     setReviewingMovie(null);
@@ -339,9 +339,9 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
     if (existingEpIdx >= 0) {
       // Update existing
       const ep = { ...newEpisodes[existingEpIdx] };
-      if (currentUser === 'Baby') {
-        ep.babyRating = episodeForm.rating;
-        ep.babyComment = episodeForm.comment || undefined;
+      if (currentUser === 'Sapo') {
+        ep.sapoRating = episodeForm.rating;
+        ep.sapoComment = episodeForm.comment || undefined;
       } else {
         ep.miReyRating = episodeForm.rating;
         ep.miReyComment = episodeForm.comment || undefined;
@@ -354,8 +354,8 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
         seasonNumber: episodeForm.seasonNumber,
         episodeNumber: episodeForm.episodeNumber,
         watchedAt: dateStr,
-        babyRating: currentUser === 'Baby' ? episodeForm.rating : undefined,
-        babyComment: currentUser === 'Baby' ? (episodeForm.comment || undefined) : undefined,
+        sapoRating: currentUser === 'Sapo' ? episodeForm.rating : undefined,
+        sapoComment: currentUser === 'Sapo' ? (episodeForm.comment || undefined) : undefined,
         miReyRating: currentUser === 'Mi Rey' ? episodeForm.rating : undefined,
         miReyComment: currentUser === 'Mi Rey' ? (episodeForm.comment || undefined) : undefined,
       };
@@ -368,8 +368,8 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
   };
 
   // ── Render Helpers ──────────────────────────────────────────────────────
-  const avgRating = (babyR?: number, miReyR?: number) => {
-    const r = [babyR, miReyR].filter(Boolean) as number[];
+  const avgRating = (sapoR?: number, miReyR?: number) => {
+    const r = [sapoR, miReyR].filter(Boolean) as number[];
     if (r.length === 0) return null;
     return r.reduce((a, b) => a + b, 0) / r.length;
   };
@@ -426,21 +426,21 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
               <p className="text-xs text-[#e2bec0]/60 mt-1">Reseñas y comentarios</p>
             </div>
             <div className="space-y-4">
-              {viewingMovieComments.babyRating && (
+              {viewingMovieComments.sapoRating && (
                 <div className="bg-[#201439] p-4 rounded-2xl border border-[#7adaa1]/20">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-white flex items-center gap-2"> {babyProfile.name}</span>
-                    <span className="text-[#fabc41] tracking-widest text-sm">{'⭐'.repeat(viewingMovieComments.babyRating)}</span>
+                    <span className="font-bold text-white flex items-center gap-2">🐸 {sapoProfile.name}</span>
+                    <span className="text-[#fabc41] tracking-widest text-sm">{'⭐'.repeat(viewingMovieComments.sapoRating)}</span>
                   </div>
-                  {viewingMovieComments.babyComment ? (
-                    <p className="text-sm text-[#e2bec0] italic">"{viewingMovieComments.babyComment}"</p>
+                  {viewingMovieComments.sapoComment ? (
+                    <p className="text-sm text-[#e2bec0] italic">"{viewingMovieComments.sapoComment}"</p>
                   ) : <p className="text-xs text-[#e2bec0]/40 italic">Sin comentarios.</p>}
                 </div>
               )}
               {viewingMovieComments.miReyRating && (
                 <div className="bg-[#201439] p-4 rounded-2xl border border-[#fabc41]/20">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-white flex items-center gap-2"> {miReyProfile.name}</span>
+                    <span className="font-bold text-white flex items-center gap-2">👑 {miReyProfile.name}</span>
                     <span className="text-[#fabc41] tracking-widest text-sm">{'⭐'.repeat(viewingMovieComments.miReyRating)}</span>
                   </div>
                   {viewingMovieComments.miReyComment ? (
@@ -448,7 +448,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                   ) : <p className="text-xs text-[#e2bec0]/40 italic">Sin comentarios.</p>}
                 </div>
               )}
-              {!viewingMovieComments.babyRating && !viewingMovieComments.miReyRating && (
+              {!viewingMovieComments.sapoRating && !viewingMovieComments.miReyRating && (
                 <p className="text-center text-sm text-[#e2bec0]/50 italic py-4">Aún no hay calificaciones.</p>
               )}
             </div>
@@ -539,28 +539,28 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                       </div>
 
                       <div className="space-y-3">
-                        {ep.babyRating ? (
+                        {ep.sapoRating ? (
                           <div>
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-[10px] font-bold text-[#7adaa1] uppercase"> {babyProfile.name}</span>
-                              <span className="text-[#a78bfa] text-[10px] tracking-widest">{'⭐'.repeat(ep.babyRating)}</span>
+                              <span className="text-[10px] font-bold text-[#7adaa1] uppercase">🐸 {sapoProfile.name}</span>
+                              <span className="text-[#a78bfa] text-[10px] tracking-widest">{'⭐'.repeat(ep.sapoRating)}</span>
                             </div>
-                            {ep.babyComment && <p className="text-xs text-[#e2bec0] italic">"{ep.babyComment}"</p>}
+                            {ep.sapoComment && <p className="text-xs text-[#e2bec0] italic">"{ep.sapoComment}"</p>}
                           </div>
                         ) : (
-                          <div className="text-[10px] text-[#e2bec0]/40 italic"> Sin reseña de {babyProfile.name}</div>
+                          <div className="text-[10px] text-[#e2bec0]/40 italic">🐸 Sin reseña de {sapoProfile.name}</div>
                         )}
 
                         {ep.miReyRating ? (
                           <div>
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-[10px] font-bold text-[#fabc41] uppercase"> {miReyProfile.name}</span>
+                              <span className="text-[10px] font-bold text-[#fabc41] uppercase">👑 {miReyProfile.name}</span>
                               <span className="text-[#a78bfa] text-[10px] tracking-widest">{'⭐'.repeat(ep.miReyRating)}</span>
                             </div>
                             {ep.miReyComment && <p className="text-xs text-[#e2bec0] italic">"{ep.miReyComment}"</p>}
                           </div>
                         ) : (
-                          <div className="text-[10px] text-[#e2bec0]/40 italic"> Sin reseña de {miReyProfile.name}</div>
+                          <div className="text-[10px] text-[#e2bec0]/40 italic">👑 Sin reseña de {miReyProfile.name}</div>
                         )}
                       </div>
                     </div>
@@ -681,8 +681,8 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
             <button
               onClick={() => { setActiveSection('peliculas'); setTab('pendiente'); }}
               className={`px-6 py-2 rounded-full font-label-caps uppercase text-[10px] tracking-widest transition-all ${activeSection === 'peliculas'
-                  ? 'bg-[#fabc41] text-[#13062b] font-bold shadow-[0_0_15px_rgba(250,188,65,0.3)]'
-                  : 'text-[#e2bec0] hover:text-white'
+                ? 'bg-[#fabc41] text-[#13062b] font-bold shadow-[0_0_15px_rgba(250,188,65,0.3)]'
+                : 'text-[#e2bec0] hover:text-white'
                 }`}
             >
               🎬 Películas
@@ -690,8 +690,8 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
             <button
               onClick={() => { setActiveSection('series'); setTab('pendiente'); }}
               className={`px-6 py-2 rounded-full font-label-caps uppercase text-[10px] tracking-widest transition-all ${activeSection === 'series'
-                  ? 'bg-[#a78bfa] text-white font-bold shadow-[0_0_15px_rgba(167,139,250,0.3)]'
-                  : 'text-[#e2bec0] hover:text-white'
+                ? 'bg-[#a78bfa] text-white font-bold shadow-[0_0_15px_rgba(167,139,250,0.3)]'
+                : 'text-[#e2bec0] hover:text-white'
                 }`}
             >
               📺 Series
@@ -699,8 +699,8 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
             <button
               onClick={() => { setActiveSection('anime'); setTab('pendiente'); }}
               className={`px-6 py-2 rounded-full font-label-caps uppercase text-[10px] tracking-widest transition-all ${activeSection === 'anime'
-                  ? 'bg-[#ff5470] text-white font-bold shadow-[0_0_15px_rgba(255,84,112,0.3)]'
-                  : 'text-[#e2bec0] hover:text-white'
+                ? 'bg-[#ff5470] text-white font-bold shadow-[0_0_15px_rgba(255,84,112,0.3)]'
+                : 'text-[#e2bec0] hover:text-white'
                 }`}
             >
               🌸 Anime
@@ -734,10 +734,10 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
               else { setAddingSeries(true); setTimeout(() => seriesInputRef.current?.focus(), 100); }
             }}
             className={`flex items-center gap-2 font-headline-md font-bold px-4 py-2.5 rounded-2xl text-sm transition-all hover:scale-105 ${activeSection === 'peliculas'
-                ? 'bg-[#fabc41] hover:bg-[#ffd06b] text-[#180c30] shadow-[0_4px_20px_rgba(250,188,65,0.4)]'
-                : activeSection === 'series'
-                  ? 'bg-[#a78bfa] hover:bg-[#b8a1fb] text-white shadow-[0_4px_20px_rgba(167,139,250,0.4)]'
-                  : 'bg-[#ff5470] hover:bg-[#ff7a90] text-white shadow-[0_4px_20px_rgba(255,84,112,0.4)]'
+              ? 'bg-[#fabc41] hover:bg-[#ffd06b] text-[#180c30] shadow-[0_4px_20px_rgba(250,188,65,0.4)]'
+              : activeSection === 'series'
+                ? 'bg-[#a78bfa] hover:bg-[#b8a1fb] text-white shadow-[0_4px_20px_rgba(167,139,250,0.4)]'
+                : 'bg-[#ff5470] hover:bg-[#ff7a90] text-white shadow-[0_4px_20px_rgba(255,84,112,0.4)]'
               }`}
           >
             <span className="material-symbols-outlined text-base">add</span>
@@ -810,7 +810,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
           {filtered.map((item) => {
             if (activeSection === 'peliculas') {
               const movie = item as MovieItem;
-              const avg = avgRating(movie.babyRating, movie.miReyRating);
+              const avg = avgRating(movie.sapoRating, movie.miReyRating);
               const statusColor = STATUS_COLORS[movie.status];
 
               return (
@@ -853,21 +853,21 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                   </p>
 
                   {/* Ratings Button */}
-                  {movie.status === 'vista' && (movie.babyRating || movie.miReyRating) && (
+                  {movie.status === 'vista' && (movie.sapoRating || movie.miReyRating) && (
                     <button
                       onClick={() => setViewingMovieComments(movie)}
                       className="flex items-center gap-3 w-full mb-3 p-2 rounded-xl bg-[#201439] hover:bg-[#2a1d45] border border-[#5a4042]/20 transition-colors group/rating"
                     >
                       <div className="flex flex-1 gap-3 text-[10px] text-[#e2bec0]/60 font-label-mono">
-                        {movie.babyRating && (
+                        {movie.sapoRating && (
                           <div className="flex items-center gap-1">
-                            <span></span>
-                            <span className="text-[#fabc41]">{'⭐'.repeat(movie.babyRating)}</span>
+                            <span>🐸</span>
+                            <span className="text-[#fabc41]">{'⭐'.repeat(movie.sapoRating)}</span>
                           </div>
                         )}
                         {movie.miReyRating && (
                           <div className="flex items-center gap-1">
-                            <span></span>
+                            <span>👑</span>
                             <span className="text-[#fabc41]">{'⭐'.repeat(movie.miReyRating)}</span>
                           </div>
                         )}
@@ -897,7 +897,7 @@ export const NochePeliculasView: React.FC<NochePeliculasViewProps> = ({
                     )}
                     {movie.status === 'vista' && (
                       <>
-                        {currentUser === 'Baby' && !movie.babyRating && (
+                        {currentUser === 'Sapo' && !movie.sapoRating && (
                           <button onClick={() => { setReviewingMovie(movie); setReviewData({ rating: 0, comment: '' }); }} className="flex-1 py-2 rounded-xl text-xs font-bold text-[#180c30] bg-[#7adaa1]/80 hover:bg-[#7adaa1] transition-all">
                             Calificar ⭐
                           </button>

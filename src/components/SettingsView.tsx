@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { playCutePop } from '../utils/audio';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../lib/firebase';
 
 interface SettingsViewProps {
   currentUser: 'Baby' | 'Mi Rey';

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { MemoryItem, UserProfile } from '../types';
 import { playCutePop } from '../utils/audio';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../lib/firebase';
+
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dtcivlksc';
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'Mi amor';
 
 interface MemoryVaultViewProps {
   memories: MemoryItem[];
@@ -58,27 +59,26 @@ export const MemoryVaultView: React.FC<MemoryVaultViewProps> = ({
     setUploading(true);
     setUploadError(null);
 
-    if (storage) {
-      try {
-        const fileRef = ref(storage, `memories/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(fileRef);
-        setNewImageUrl(url);
-      } catch (err: any) {
-        console.error(err);
-        setUploadError(
-          'Error al subir a Firebase. Es probable que necesites activar las reglas públicas de Storage.'
-        );
-      } finally {
-        setUploading(false);
-      }
-    } else {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewImageUrl(reader.result as string);
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'our-lobby');
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formData }
+      );
+
+      if (!res.ok) throw new Error('Upload failed');
+
+      const data = await res.json();
+      setNewImageUrl(data.secure_url);
+    } catch (err: any) {
+      console.error(err);
+      setUploadError('Error al subir la imagen. Intenta de nuevo.');
+    } finally {
+      setUploading(false);
     }
   };
 
