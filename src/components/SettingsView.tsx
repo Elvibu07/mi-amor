@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { playCutePop } from '../utils/audio';
 
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dtcivlksc';
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'Mi amor';
+
 interface SettingsViewProps {
   currentUser: 'Baby' | 'Mi Rey';
   babyProfile: UserProfile;
@@ -90,25 +93,26 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ label, emoji = '', accent
     setUploading(true);
     setUploadError(null);
 
-    if (storage) {
-      try {
-        const fileRef = ref(storage, `avatars/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(fileRef);
-        setAvatar(url);
-      } catch (err: any) {
-        console.error(err);
-        setUploadError('Error al subir avatar a Firebase.');
-      } finally {
-        setUploading(false);
-      }
-    } else {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatar(reader.result as string);
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'our-lobby-avatars');
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formData }
+      );
+
+      if (!res.ok) throw new Error('Upload failed');
+
+      const data = await res.json();
+      setAvatar(data.secure_url);
+    } catch (err: any) {
+      console.error(err);
+      setUploadError('Error al subir avatar a Cloudinary.');
+    } finally {
+      setUploading(false);
     }
   };
 
