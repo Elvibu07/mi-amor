@@ -21,6 +21,7 @@ import { SalonJuegosView } from './components/SalonJuegosView';
 import { TicTacToeGame } from './components/TicTacToeGame';
 import { WordSearchGame } from './components/WordSearchGame';
 import { BattleshipGame } from './components/BattleshipGame';
+import { TuttiFruttiView } from './components/TuttiFruttiView';
 import { SettingsView } from './components/SettingsView';
 import { MiniMusicPlayer } from './components/MiniMusicPlayer';
 import confetti from 'canvas-confetti';
@@ -234,10 +235,19 @@ export default function App() {
   };
   const handleRedeemCoupon = (id: string) => {
     const c = coupons.find(x => x.id === id);
-    updateCoupon(id, { isRedeemed: true, redeemedAt: `Canjeado el ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ✨` });
+    let redeemedText = `Canjeado el ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ✨`;
+    
+    if (c?.to === 'Ambos') {
+      const redeemerName = currentUser === 'Baby' ? babyProfile.name : miReyProfile.name;
+      redeemedText = `Canjeado por ${redeemerName} el ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} ✨`;
+    }
+
+    updateCoupon(id, { isRedeemed: true, redeemedAt: redeemedText });
     if (c) {
       const targetUser = c.from === 'Baby' ? 'Baby' : 'Mi Rey';
-      sendNotificationToUser(targetUser, '🎟️ ¡Boleto Canjeado!', `${c.to} ha canjeado tu boleto: "${c.title}".`);
+      const redeemerName = currentUser === 'Baby' ? babyProfile.name : miReyProfile.name;
+      const notifUser = c.to === 'Ambos' ? redeemerName : c.to;
+      sendNotificationToUser(targetUser, '🎟️ ¡Boleto Canjeado!', `${notifUser} ha canjeado tu boleto: "${c.title}".`);
     }
   };
   const handleUnredeemCoupon = (id: string) => updateCoupon(id, { isRedeemed: false, redeemedAt: undefined });
@@ -415,6 +425,7 @@ export default function App() {
             onUnredeemCoupon={handleUnredeemCoupon}
             babyProfile={babyProfile}
             miReyProfile={miReyProfile}
+            currentUser={currentUser}
           />
         )}
 
@@ -492,6 +503,15 @@ export default function App() {
             miReyProfile={miReyProfile}
             onUpdateScore={handleUpdateScore}
             currentUser={currentUser || 'Baby'}
+          />
+        )}
+
+        {currentView === 'tutti-frutti' && (
+          <TuttiFruttiView
+            currentUser={currentUser || 'Baby'}
+            babyProfile={babyProfile}
+            miReyProfile={miReyProfile}
+            onBack={() => setCurrentView('juegos')}
           />
         )}
 

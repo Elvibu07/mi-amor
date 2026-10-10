@@ -169,6 +169,33 @@ export const SalonJuegosView: React.FC<SalonJuegosViewProps> = ({
             </div>
           </div>
 
+          {/* Tutti Frutti */}
+          <div className="group bg-[#25193d] rounded-2xl p-5 flex flex-col h-full transform transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(255,84,112,0.25)] border border-[#5a4042]/30">
+            <div className="w-full h-48 rounded-xl mb-4 relative overflow-hidden bg-[#2f2348] flex items-center justify-center group-hover:bg-[#ff5470]/10 transition-colors">
+              <span className="material-symbols-outlined text-6xl text-[#ff5470] group-hover:scale-110 transition-transform duration-300">
+                casino
+              </span>
+            </div>
+            <div className="flex-grow flex flex-col">
+              <h3 className="font-headline-md text-xl text-white mb-1 group-hover:text-[#ff5470] transition-colors">
+                Tutti Frutti del Amor
+              </h3>
+              <p className="font-body-md text-xs sm:text-sm text-[#e2bec0] mb-6 flex-grow leading-relaxed">
+                ¡Gira la ruleta, escribe rápido y debatan las respuestas más divertidas!
+              </p>
+              <button
+                onClick={() => {
+                  onSelectGame('tutti-frutti');
+                  playCutePop();
+                }}
+                className="w-full py-3 rounded-full font-label-caps text-xs uppercase tracking-wider bg-[#ff5470] text-white shadow-[0_4px_0_#b71b40] active:shadow-none active:translate-y-1 transition-all flex justify-center items-center gap-2 hover:bg-[#e63956] font-bold"
+              >
+                JUGAR PARTIDA
+                <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+              </button>
+            </div>
+          </div>
+
           {/* Próximamente */}
           <div className="bg-[#25193d]/50 rounded-2xl p-5 flex flex-col h-full opacity-60 border border-[#5a4042]/20">
             <div className="w-full h-48 rounded-xl mb-4 relative overflow-hidden bg-[#2f2348]/50 flex items-center justify-center">

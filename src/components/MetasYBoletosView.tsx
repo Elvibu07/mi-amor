@@ -13,6 +13,7 @@ interface MetasYBoletosViewProps {
   onUnredeemCoupon: (id: string) => void;
   babyProfile: UserProfile;
   miReyProfile: UserProfile;
+  currentUser: 'Baby' | 'Mi Rey';
 }
 
 export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
@@ -25,6 +26,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
   onUnredeemCoupon,
   babyProfile,
   miReyProfile,
+  currentUser,
 }) => {
   const [activeTab, setActiveTab] = useState<'metas' | 'boletos'>('metas');
 
@@ -37,12 +39,12 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
   const [newGoalAuthor, setNewGoalAuthor] = useState<'Baby' | 'Mi Rey' | 'Juntos'>('Juntos');
 
   // Coupons filters & state
-  const [couponFilter, setCouponFilter] = useState<'todos' | 'disponibles' | 'canjeados' | 'para-baby' | 'para-mirey'>('todos');
+  const [couponFilter, setCouponFilter] = useState<'todos' | 'disponibles' | 'canjeados' | 'para-baby' | 'para-mirey' | 'para-ambos'>('todos');
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [newCouponTitle, setNewCouponTitle] = useState('');
   const [newCouponDesc, setNewCouponDesc] = useState('');
-  const [newCouponFrom, setNewCouponFrom] = useState<'Baby' | 'Mi Rey'>('Baby');
-  const [newCouponTo, setNewCouponTo] = useState<'Baby' | 'Mi Rey'>('Mi Rey');
+  const [newCouponFrom, setNewCouponFrom] = useState<'Baby' | 'Mi Rey'>(currentUser);
+  const [newCouponTo, setNewCouponTo] = useState<'Baby' | 'Mi Rey' | 'Ambos'>(currentUser === 'Baby' ? 'Mi Rey' : 'Baby');
   const [newCouponCategory, setNewCouponCategory] = useState('Cariño');
   const [newCouponColor, setNewCouponColor] = useState<'pink' | 'amber' | 'emerald' | 'purple' | 'cyan'>('pink');
 
@@ -63,6 +65,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
     if (couponFilter === 'canjeados') return c.isRedeemed;
     if (couponFilter === 'para-baby') return c.to === 'Baby';
     if (couponFilter === 'para-mirey') return c.to === 'Mi Rey';
+    if (couponFilter === 'para-ambos') return c.to === 'Ambos';
     return true;
   });
 
@@ -449,6 +452,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                 { id: 'canjeados', label: '💖 Ya Canjeados' },
                 { id: 'para-baby', label: ` Para ${babyProfile.name}` },
                 { id: 'para-mirey', label: ` Para ${miReyProfile.name}` },
+                { id: 'para-ambos', label: '👩‍❤️‍👨 Para Ambos' },
               ].map((filter) => (
                 <button
                   key={filter.id}
@@ -472,7 +476,9 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
               {filteredCoupons.map((coupon) => {
                 const theme = getCouponTheme(coupon.themeColor);
                 const fromAvatar = coupon.from === 'Baby' ? babyProfile.avatar : miReyProfile.avatar;
-                const toAvatar = coupon.to === 'Baby' ? babyProfile.avatar : miReyProfile.avatar;
+                const toAvatar = coupon.to === 'Baby' ? babyProfile.avatar : coupon.to === 'Mi Rey' ? miReyProfile.avatar : 'https://api.dicebear.com/7.x/notionists/svg?seed=Love&backgroundColor=ff5470';
+                
+                const canRedeem = coupon.to === currentUser || coupon.to === 'Ambos';
 
                 return (
                   <div
@@ -513,7 +519,7 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                       <div className="flex items-center gap-1.5">
                         <span className="text-[#e2bec0]/70">Para:</span>
                         <img alt={coupon.to} src={toAvatar} className="w-5 h-5 rounded-full object-cover border border-white/20" />
-                        <span className="font-bold text-[#fabc41]">{coupon.to === 'Baby' ? babyProfile.name : miReyProfile.name}</span>
+                        <span className="font-bold text-[#fabc41]">{coupon.to === 'Baby' ? babyProfile.name : coupon.to === 'Mi Rey' ? miReyProfile.name : 'Ambos'}</span>
                       </div>
                     </div>
 
@@ -551,13 +557,21 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                             Reactivar
                           </button>
                         </div>
-                      ) : (
+                      ) : canRedeem ? (
                         <button
                           onClick={() => handleRedeemTicket(coupon)}
                           className={`w-full py-3 rounded-xl font-headline-md font-bold text-sm tracking-wide transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${theme.btn}`}
                         >
                           <span className="material-symbols-outlined text-[18px]">redeem</span>
                           <span>¡CANJEAR BOLETO AHORA!</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className={`w-full py-3 rounded-xl font-headline-md font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 opacity-50 cursor-not-allowed bg-[#3b2d59] text-[#e2bec0]`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">lock</span>
+                          <span>Solo válido para {coupon.to === 'Baby' ? babyProfile.name : miReyProfile.name}</span>
                         </button>
                       )}
                     </div>
@@ -788,9 +802,10 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-label-mono text-[#e2bec0] uppercase">Emitido por:</label>
                   <select
+                    disabled
                     value={newCouponFrom}
                     onChange={(e) => setNewCouponFrom(e.target.value as any)}
-                    className="w-full bg-[#201439] text-white rounded-xl p-2.5 border border-[#5a4042]/30 text-xs font-bold"
+                    className="w-full bg-[#201439]/50 text-white/50 cursor-not-allowed rounded-xl p-2.5 border border-[#5a4042]/30 text-xs font-bold"
                   >
                     <option value="Baby"> {babyProfile.name}</option>
                     <option value="Mi Rey"> {miReyProfile.name}</option>
@@ -804,8 +819,9 @@ export const MetasYBoletosView: React.FC<MetasYBoletosViewProps> = ({
                     onChange={(e) => setNewCouponTo(e.target.value as any)}
                     className="w-full bg-[#201439] text-white rounded-xl p-2.5 border border-[#5a4042]/30 text-xs font-bold"
                   >
-                    <option value="Mi Rey"> {miReyProfile.name}</option>
                     <option value="Baby"> {babyProfile.name}</option>
+                    <option value="Mi Rey"> {miReyProfile.name}</option>
+                    <option value="Ambos"> Ambos 👩‍❤️‍👨</option>
                   </select>
                 </div>
               </div>

@@ -10,7 +10,8 @@ export type ViewType =
   | 'battleship'
   | 'cartas'
   | 'peliculas'
-  | 'settings';
+  | 'settings'
+  | 'tutti-frutti';
 
 export type UserPartner = 'Baby' | 'Mi Rey';
 
@@ -82,7 +83,7 @@ export interface CouponItem {
   title: string;
   description: string;
   from: 'Baby' | 'Mi Rey';
-  to: 'Baby' | 'Mi Rey';
+  to: 'Baby' | 'Mi Rey' | 'Ambos';
   themeColor: 'pink' | 'amber' | 'emerald' | 'purple' | 'cyan';
   isRedeemed: boolean;
   redeemedAt?: string;
